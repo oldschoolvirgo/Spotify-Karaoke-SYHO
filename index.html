@@ -28,7 +28,7 @@
         .then(text => {
             const firstLine = text.split('\n')[0]; // Get the first line of the text
             const link = document.getElementById('link');
-            link.textContent = firstLine; // Set the first line as the link text
+            //link.textContent = firstLine; // Set the first line as the link text
             link.href = firstLine; // Optionally set it as the link href (update if not a URL)
         })
         .catch(error => {
