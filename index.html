@@ -20,9 +20,9 @@
 
     fetch(fileUrl)
         .then(text => {
-            const firstLine = text.split('\n')[0]; // Get the first line of the text
+            const firstLine = text.toString().split('\n')[0]; // Get the first line of the text
             const link = document.getElementById('spotify_jam_url');
-            link.textContent = firstLine; // Set the first line as the link text
+            //link.textContent = firstLine; // Set the first line as the link text
             link.href = firstLine; // Optionally set it as the link href (update if not a URL)
         })
 </script>
