@@ -19,12 +19,21 @@
     const fileUrl = 'https://raw.githubusercontent.com/oldschoolvirgo/Spotify-Karaoke-SYHO/main/spotify_jam_url?raw=true';
 
     fetch(fileUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.text();
+        })
         .then(text => {
-            const firstLine = text["url"] //text.toString().split('\n')[0]; // Get the first line of the text
-            const link = document.getElementById('spotify_jam_url');
+            const firstLine = text.split('\n')[0]; // Get the first line of the text
+            const link = document.getElementById('link');
             link.textContent = firstLine; // Set the first line as the link text
             link.href = firstLine; // Optionally set it as the link href (update if not a URL)
         })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
 </script>
   </head>
   <body>
