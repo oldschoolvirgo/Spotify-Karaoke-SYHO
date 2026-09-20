@@ -41,6 +41,24 @@ let queueRevision = 0;
 let queueRefreshPromise = null;
 let queueMutationPending = false;
 let queueOpen = null;
+let maxSongsPerGuest = null;
+let announcement = null, announcementTimer = null, announcementRevision = 0;
+let lastAnnouncementId = null, lastAnnouncementPublishedAt = -1;
+function acceptAnnouncement(snapshot) {
+  const next = snapshot.announcement;
+  if (!queuePageActive || snapshot.partyId !== partyId || !next || typeof next.id !== 'string' || !next.id ||
+      typeof next.title !== 'string' || typeof next.message !== 'string' || !(next.title.trim() || next.message.trim()) ||
+      !Number.isFinite(next.publishedAt) || !Number.isFinite(next.expiresAt) || next.expiresAt <= Date.now() ||
+      next.id === lastAnnouncementId || next.publishedAt < lastAnnouncementPublishedAt) return;
+  lastAnnouncementId = next.id; lastAnnouncementPublishedAt = next.publishedAt;
+  announcement = next;
+  clearTimeout(announcementTimer);
+  const revision = ++announcementRevision;
+  announcementTimer = setTimeout(() => {
+    if (revision !== announcementRevision) return;
+    announcement = null; announcementTimer = null; updateSubmissionState();
+  }, 10000);
+}
 let selectionQueueTimer = null;
 let selectionQueueCheckPending = false;
 let queuePageActive = true;
@@ -131,6 +149,8 @@ async function queueRequest(path = "/queue", method = "GET", data = {}) {
 
 function showSongLimit(value) {
   if (!Number.isInteger(value) || value < 1 || value > 20) return;
+  maxSongsPerGuest = value;
+  renderQueueStatus();
   const hint = document.querySelector('#song-limit-hint');
   hint.textContent = `You can have up to ${value} active ${value === 1 ? 'song' : 'songs'}.`;
   hint.hidden = false;
@@ -161,12 +181,23 @@ function syncSelectionQueuePolling() {
   }, SELECTION_QUEUE_POLL_INTERVAL_MS);
 }
 
+function renderQueueStatus() {
+  document.querySelector('#queue-state').hidden = !validPartyId;
+  document.querySelector('#queue-state').setAttribute('data-state', announcement ? 'announcement' : queueOpen === true ? 'open' : queueOpen === false ? 'closed' : 'unknown');
+  const title = announcement ? announcement.title : queueOpen === true ? 'Queue Open' : queueOpen === false ? 'Queue Closed' : 'Checking queue status\u2026';
+  const message = announcement ? announcement.message : queueOpen === false ? 'Existing songs will still play' : queueOpen === true && maxSongsPerGuest !== null ?
+    `Up to ${maxSongsPerGuest} ${maxSongsPerGuest === 1 ? 'song' : 'songs'} per guest` : '';
+  // Avoid repeating live-region updates on every poll when the status has not changed.
+  const titleElement = document.querySelector('#queue-state-text');
+  const messageElement = document.querySelector('#queue-state-message');
+  if (titleElement.textContent !== title) titleElement.textContent = title;
+  if (messageElement.textContent !== message) messageElement.textContent = message;
+}
+
 function updateSubmissionState() {
   singerForm.querySelector('button[type="submit"]').disabled = queueMutationPending || queueOpen === false;
-  document.querySelector('#queue-state').hidden = !validPartyId;
-  document.querySelector('#queue-state-text').textContent = queueOpen === true ? 'Queue Open' : queueOpen === false ?
-    "Queue Closed - Karaoke is still going, but we're not accepting new song requests right now." : 'Queue status not yet available.';
-  document.querySelector('#queue-status-check').hidden = queueOpen !== false;
+  renderQueueStatus();
+  document.querySelector('#queue-status-check').hidden = Boolean(announcement) || queueOpen !== false;
   document.querySelector('#queue-status-check').disabled = queueMutationPending || Boolean(queueRefreshPromise);
   syncSelectionQueuePolling();
 }
@@ -177,6 +208,7 @@ document.querySelector('#queue-status-check').addEventListener('click', async ()
 });
 
 function acceptQueue(snapshot) {
+  acceptAnnouncement(snapshot);
   if (typeof snapshot.queueOpen === 'boolean') queueOpen = snapshot.queueOpen;
   if (queueOpen === true && nameError.textContent === 'The karaoke queue is currently closed.') nameError.textContent = '';
   updateSubmissionState();
@@ -790,6 +822,8 @@ if (validPartyId) {
     }
   });
   window.addEventListener('pagehide', () => {
+    clearTimeout(announcementTimer); announcementTimer = null; announcementRevision++; announcement = null;
+    updateSubmissionState();
     queuePageActive = false;
     syncSelectionQueuePolling();
   });

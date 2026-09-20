@@ -26,8 +26,11 @@
       </a>
       <span>Sing Your ❤️‍🔥 Out</span>
     </header>
-    <div id="queue-state" hidden>
-      <p id="queue-state-text" role="status" aria-live="polite"></p>
+    <div id="queue-state" class="party-status" hidden>
+      <div class="party-status-content" role="status" aria-live="polite" aria-atomic="true">
+        <p id="queue-state-text">Checking queue status&hellip;</p>
+        <p id="queue-state-message"></p>
+      </div>
       <button id="queue-status-check" type="button" hidden>Check status</button>
       <p id="queue-status-error" role="status"></p>
     </div>

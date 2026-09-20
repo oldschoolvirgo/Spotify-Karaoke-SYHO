@@ -2,8 +2,9 @@
 body { margin: 0; } main { max-width: 720px; margin: auto; padding: 24px; }
 h1 { margin-bottom: 0; } h2 { font-size: 1.15rem; }
 section { margin-top: 24px; } form { display: grid; gap: 12px; margin: 24px 0; }
-input, button { box-sizing: border-box; font: inherit; border-radius: 8px; padding: 14px; min-height: 48px; }
-input { width: 100%; border: 1px solid #9888b0; background: #20162e; color: inherit; }
+input, textarea, button { box-sizing: border-box; font: inherit; border-radius: 8px; padding: 14px; min-height: 48px; }
+input, textarea { width: 100%; border: 1px solid #9888b0; background: #20162e; color: inherit; }
+textarea { resize: vertical; }
 button { border: 0; background: #dfc0ff; color: #241032; cursor: pointer; } button:disabled { opacity: .6; }
 #pin { letter-spacing: .5em; font-size: 1.5rem; } #logout { float: right; }
 #message { color: #ffdba8; } .hint, #freshness { color: #c7bbd5; }

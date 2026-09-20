@@ -9,6 +9,30 @@
   let waitingNodes = new Map();
   let settingsRevision = 0, settingsPending = false, settingsDirty = false, settingsLimit = null;
   let settingsOpen = null;
+  let announcementPending = false;
+  $('announcement-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!token || !party || announcementPending) return;
+    const title = $('announcement-title').value.trim(), text = $('announcement-message').value.trim();
+    if (!title && !text) { $('announcement-status').textContent = 'Enter a title or message.'; return; }
+    const revision = generation, selected = party;
+    announcementPending = true; $('announcement-send').disabled = true;
+    $('announcement-status').textContent = 'Sending...';
+    try {
+      const data = await request('/admin/announcement', 'POST', { partyId: selected, title, message: text });
+      if (revision !== generation) return;
+      if (data.partyId !== selected || !data.announcement?.id || data.announcement.title !== title ||
+          data.announcement.message !== text) throw Error('Invalid announcement response.');
+      $('announcement-status').textContent = 'Published for guest phones and Lyrics Display.';
+    } catch (error) {
+      if (revision !== generation) return;
+      if (error.status === 401) { clearSession('Session expired or revoked. Enter your PIN again.'); return; }
+      $('announcement-status').textContent = error.status === 400 ? 'Announcement rejected. Use text within a 16 KiB request.' :
+        'Send unconfirmed. Your draft is retained; sending again publishes a new announcement.';
+    } finally {
+      if (revision === generation) { announcementPending = false; $('announcement-send').disabled = !token || !party; }
+    }
+  });
   function updateSettingsControls() {
     $('song-limit').disabled = settingsPending || settingsLimit === null;
     $('settings-save').disabled = settingsPending || settingsLimit === null;
@@ -38,6 +62,8 @@
   }
   const message = text => { $('message').textContent = text; };
   function clearData() {
+    announcementPending = false; $('announcement-send').disabled = !token || !party;
+    $('announcement-title').value = ''; $('announcement-message').value = ''; $('announcement-status').textContent = '';
     $('estimate-count').textContent = 'Queue not loaded';
     $('estimate-duration').textContent = 'Duration unavailable';
     $('estimate-end').textContent = 'Est. end: --';

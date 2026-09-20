@@ -36,6 +36,14 @@
       <button id="queue-state-action" type="button" disabled>Close queue</button>
       <p id="settings-message" role="status" aria-live="polite"></p>
     </form>
+    <form id="announcement-form" aria-labelledby="announcement-heading">
+      <h2 id="announcement-heading">Announcement</h2>
+      <label for="announcement-title">Title</label><input id="announcement-title" type="text">
+      <label for="announcement-message">Message</label><textarea id="announcement-message" rows="3"></textarea>
+      <p class="hint">Keep announcements concise for easy reading on guest phones.</p>
+      <button id="announcement-send" type="submit" disabled>Send Announcement</button>
+      <p id="announcement-status" role="status" aria-live="polite"></p>
+    </form>
     <section><h2>Player</h2><div class="player-controls"><button id="send-restart" type="button" disabled>RESTART</button><button id="send-play-pause" type="button" disabled>PLAY / PAUSE</button><button id="send-next" type="button" disabled>NEXT</button></div></section>
     <section><h2>Loudness</h2><button id="send-normal" type="button" disabled>NORMAL</button> <button id="send-loud" type="button" disabled>LOUD THIS SONG</button><p class="hint">Command results only. Loud returns to Normal locally when the track changes; current loudness is not reported here.</p><button id="send-ping" type="button" disabled>Send Ping</button><p id="command-status" role="status">No command sent.</p></section>
     <section><h2>Worker</h2><p id="worker-status">No data loaded</p><p id="worker-contact"></p><p id="current-uri"></p></section>
