@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#100b1c" />
+  <title>Sing Your ❤️‍🔥 Out | A Fresh Take on Karaoke</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="brand" aria-label="Sing Your ❤️‍🔥 Out karaoke">
+      <a href="https://www.instagram.com/singyourheartouthtx/" target="_blank" rel="noopener noreferrer"
+        aria-label="Visit our Instagram page" style="text-decoration: none;">
+        <span class="brand-mark">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="0.5"
+            class="bi bi-instagram" viewBox="0 0 16 16">
+            <path fill="#ffffff"
+              d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334">
+            </path>
+          </svg>
+        </span>
+      </a>
+      <span>Sing Your ❤️‍🔥 Out</span>
+    </header>
+    <div id="queue-state" hidden>
+      <p id="queue-state-text" role="status" aria-live="polite"></p>
+      <button id="queue-status-check" type="button" hidden>Check status</button>
+      <p id="queue-status-error" role="status"></p>
+    </div>
+
+    <section id="join-screen" class="screen" aria-labelledby="join-title" hidden>
+      <div class="intro">
+        <h1 id="join-title">Sing Your ❤️‍🔥 Out</h1>
+      </div>
+      <form id="join-form" novalidate>
+        <label for="party-code">Enter tonight's party code:</label>
+        <input id="party-code" name="partyId" type="text" placeholder="1234" autocomplete="off" autocapitalize="none"
+          spellcheck="false" enterkeyhint="go" aria-describedby="party-code-error" />
+        <p id="party-code-error" class="error-message" role="alert"></p>
+        <button class="primary-button" type="submit">Join</button>
+      </form>
+    </section>
+
+    <section id="search-screen" class="screen" hidden>
+      <div class="intro">
+        <p class="eyebrow">Hire me for your next party, event, or gathering!</p>
+        <nav class="contact-links" aria-label="Contact Sing Your Heart Out">
+          <a href="mailto:OldSchoolVirgo@gmail.com?subject=Sing%20Your%20Heart%20Out%20Inquiry"
+            aria-label="Email Sing Your Heart Out" title="Email">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"
+              aria-hidden="true">
+              <path fill-rule="evenodd"
+                d="m3 7.5 3.5 2L8 8.75l1.5.75 3.5-2v-6A1.5 1.5 0 0 0 11.5 0h-7A1.5 1.5 0 0 0 3 1.5zM2 3.133l-.941.502A2 2 0 0 0 0 5.4v.313l2 1.173zm12 3.753 2-1.173V5.4a2 2 0 0 0-1.059-1.765L14 3.133zm-3.693 3.324L16 6.873v6.5zm5.634 4.274L8 10.072.059 14.484A2 2 0 0 0 2 16h12a2 2 0 0 0 1.941-1.516M5.693 10.21 0 13.372v-6.5zM8 1.982C9.664.309 13.825 3.236 8 7 2.175 3.236 6.336.31 8 1.982" />
+            </svg>
+          </a>
+          <a href="tel:+12812352503" aria-label="Call Sing Your Heart Out" title="Call">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"
+              aria-hidden="true">
+              <path
+                d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+              <path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2" />
+            </svg>
+          </a>
+          <a href="sms:+12812352503" aria-label="Text Sing Your Heart Out" title="Text message">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"
+              aria-hidden="true">
+              <path
+                d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9 9 0 0 0 8 15m0-9.007c1.664-1.711 5.825 1.283 0 5.132-5.825-3.85-1.664-6.843 0-5.132" />
+            </svg>
+          </a>
+          <a href="https://ig.me/m/singyourheartouthtx" target="_blank" rel="noopener noreferrer"
+            aria-label="Message Sing Your Heart Out on Instagram" title="Instagram">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"
+              aria-hidden="true">
+              <path
+                d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334" />
+            </svg>
+          </a>
+          <a href="https://wa.me/12812352503" target="_blank" rel="noopener noreferrer"
+            aria-label="Message Sing Your Heart Out on WhatsApp" title="WhatsApp">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"
+              aria-hidden="true">
+              <path
+                d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232" />
+            </svg>
+          </a>
+        </nav>
+        <h1>Find your favorite song</h1>
+        <p>Search for a song or artist and Sing Your ❤️‍🔥 Out!</p>
+      </div>
+
+      <form id="search-form" class="search-box" role="search">
+        <span aria-hidden="true">⌕</span>
+        <input id="search-input" type="search" placeholder="Song, artist, or album" autocomplete="off"
+          aria-label="Song, artist, or album" />
+        <button id="search-button" type="submit">Search</button>
+      </form>
+
+      <p id="queue-notice" class="queue-notice" role="status" hidden></p>
+
+      <div class="song-view-tabs" role="tablist" aria-label="Song lists">
+        <button id="queue-tab" class="song-view-tab" type="button" role="tab" aria-selected="true"
+          aria-controls="song-results">Tonight's Queue</button>
+        <button id="popular-tab" class="song-view-tab" type="button" role="tab" aria-selected="false"
+          aria-controls="song-results">Popular Songs</button>
+      </div>
+
+      <div class="results-heading">
+        <h2 id="results-title">Tonight's queue</h2>
+        <span id="result-count"></span>
+      </div>
+      <div id="song-results" class="song-list" role="tabpanel" aria-labelledby="queue-tab" aria-live="polite"></div>
+      <button id="popular-toggle" class="text-button popular-toggle" type="button" hidden>Show all</button>
+    </section>
+
+    <section id="selection-screen" class="screen" hidden>
+      <button id="back-button" class="text-button back-button" type="button">← Back to songs</button>
+      <div class="selection-card">
+        <img id="selected-artwork" class="selection-artwork" src="" alt="" />
+        <p class="eyebrow">Your selection</p>
+        <h1 id="selected-title" class="detail-song-title"></h1>
+        <p id="selected-artist" class="selected-artist"></p>
+
+        <form id="singer-form" novalidate>
+          <p id="song-limit-hint" hidden></p>
+          <label for="singer-name">What should we call you?</label>
+          <input id="singer-name" name="singerName" type="text" maxlength="40" placeholder="Enter your singer name"
+            autocomplete="name" autocapitalize="words" />
+          <p id="name-error" class="error-message" role="alert"></p>
+          <button class="primary-button" type="submit">Add to Queue</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="edit-screen" class="screen" hidden>
+      <button id="edit-back-button" class="text-button back-button" type="button">← Back to queue</button>
+      <div class="selection-card">
+        <img id="edit-artwork" class="selection-artwork" src="" alt="" />
+        <p class="eyebrow">Manage your selection</p>
+        <h1 id="edit-title" class="detail-song-title"></h1>
+        <p id="edit-artist" class="selected-artist"></p>
+
+        <form id="edit-form" novalidate>
+          <label for="edit-singer-name">Singer name</label>
+          <input id="edit-singer-name" name="singerName" type="text" maxlength="40" placeholder="Enter your singer name"
+            autocomplete="name" autocapitalize="words" />
+          <p id="edit-name-error" class="error-message" role="alert"></p>
+          <button class="primary-button" type="submit">Save Changes</button>
+          <button id="remove-song-button" class="danger-button" type="button">Remove Song</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="success-screen" class="screen success-screen" hidden>
+      <div class="success-icon" aria-hidden="true">✓</div>
+      <p class="eyebrow">Song confirmed</p>
+      <h1>You’re in the queue!</h1>
+      <p class="success-copy">Warm up those vocals. We’ll let the host know you’re ready.</p>
+
+      <dl class="queue-details">
+        <div>
+          <dt>Singer</dt>
+          <dd id="confirmation-singer"></dd>
+        </div>
+        <div>
+          <dt>Song</dt>
+          <dd id="confirmation-song" class="confirmation-song-title"></dd>
+        </div>
+        <div>
+          <dt>Queue position</dt>
+          <dd id="confirmation-position" class="queue-position"></dd>
+        </div>
+      </dl>
+
+      <button id="search-again-button" class="primary-button" type="button">Choose Another Song</button>
+    </section>
+  </main>
+
+  <dialog id="remove-dialog" class="confirm-dialog" aria-labelledby="remove-dialog-title"
+    aria-describedby="remove-dialog-message">
+    <form method="dialog">
+      <p class="eyebrow">Remove selection</p>
+      <h2 id="remove-dialog-title">Remove this song?</h2>
+      <p id="remove-dialog-message" class="confirm-dialog-copy"></p>
+      <div class="confirm-dialog-actions">
+        <button class="dialog-cancel-button" type="submit" value="cancel">Keep Song</button>
+        <button id="confirm-remove-button" class="dialog-remove-button" type="submit" value="confirm">
+          Remove Song
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
