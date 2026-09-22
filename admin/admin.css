@@ -1,24 +1,179 @@
-:root { color-scheme: dark; font: 16px system-ui, sans-serif; background: #100b1c; color: #f4effa; }
-body { margin: 0; } main { max-width: 720px; margin: auto; padding: 24px; }
-h1 { margin-bottom: 0; } h2 { font-size: 1.15rem; }
-section { margin-top: 24px; } form { display: grid; gap: 12px; margin: 24px 0; }
-input, textarea, button { box-sizing: border-box; font: inherit; border-radius: 8px; padding: 14px; min-height: 48px; }
-input, textarea { width: 100%; border: 1px solid #9888b0; background: #20162e; color: inherit; }
-textarea { resize: vertical; }
-button { border: 0; background: #dfc0ff; color: #241032; cursor: pointer; } button:disabled { opacity: .6; }
-#pin { letter-spacing: .5em; font-size: 1.5rem; } #logout { float: right; }
-#message { color: #ffdba8; } .hint, #freshness { color: #c7bbd5; }
-ul { padding-left: 24px; } li { padding: 8px 0; } #current-uri { overflow-wrap: anywhere; }
-[hidden] { display: none !important; }
+@font-face {
+    font-family: "Inter";
+    src: url("../fonts/InterVariable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
 
-.player-controls { display: flex; flex-wrap: wrap; gap: 8px; }
-.queue-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-dialog { box-sizing: border-box; width: min(440px, calc(100% - 32px)); border: 1px solid #9888b0; border-radius: 12px; background: #20162e; color: inherit; padding: 20px; }
-dialog::backdrop { background: #0009; } dialog form { margin: 0; }
-#queue-context { overflow-wrap: anywhere; } #queue-error, #queue-message { color: #ffdba8; }
+:root {
+    color-scheme: dark;
+    font: 16px "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #100b1c;
+    color: #f4effa;
+}
 
-.queue-drag-handle { touch-action: none; cursor: grab; border: 1px solid #9888b0; background: #30203f; color: inherit; min-width: 64px; user-select: none; }
-.queue-dragging { background: #30203f; outline: 2px solid #dfc0ff; border-radius: 8px; }
-.queue-dragging .queue-drag-handle { cursor: grabbing; }
-.queue-pending { opacity: .65; }
-.queue-drag-handle:focus-visible { outline: 3px solid #ffdba8; outline-offset: 2px; }
+body {
+    margin: 0;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+main {
+    max-width: 720px;
+    margin: auto;
+    padding: 24px;
+}
+
+h1 {
+    margin-bottom: 0;
+}
+
+h2 {
+    font-size: 1.15rem;
+}
+
+section {
+    margin-top: 24px;
+}
+
+form {
+    display: grid;
+    gap: 12px;
+    margin: 24px 0;
+}
+
+input,
+textarea,
+button {
+    box-sizing: border-box;
+    font: inherit;
+    border-radius: 8px;
+    padding: 14px;
+    min-height: 48px;
+}
+
+input,
+textarea {
+    width: 100%;
+    border: 1px solid #9888b0;
+    background: #20162e;
+    color: inherit;
+}
+
+textarea {
+    resize: vertical;
+}
+
+button {
+    border: 0;
+    background: #dfc0ff;
+    color: #241032;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: .6;
+}
+
+#pin {
+    letter-spacing: .5em;
+    font-size: 1.5rem;
+}
+
+#logout {
+    float: right;
+}
+
+#message {
+    color: #ffdba8;
+}
+
+.hint,
+#freshness {
+    color: #c7bbd5;
+}
+
+ul {
+    padding-left: 24px;
+}
+
+li {
+    padding: 8px 0;
+}
+
+#current-uri {
+    overflow-wrap: anywhere;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.player-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.queue-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+dialog {
+    box-sizing: border-box;
+    width: min(440px, calc(100% - 32px));
+    border: 1px solid #9888b0;
+    border-radius: 12px;
+    background: #20162e;
+    color: inherit;
+    padding: 20px;
+}
+
+dialog::backdrop {
+    background: #0009;
+}
+
+dialog form {
+    margin: 0;
+}
+
+#queue-context {
+    overflow-wrap: anywhere;
+}
+
+#queue-error,
+#queue-message {
+    color: #ffdba8;
+}
+
+.queue-drag-handle {
+    touch-action: none;
+    cursor: grab;
+    border: 1px solid #9888b0;
+    background: #30203f;
+    color: inherit;
+    min-width: 64px;
+    user-select: none;
+}
+
+.queue-dragging {
+    background: #30203f;
+    outline: 2px solid #dfc0ff;
+    border-radius: 8px;
+}
+
+.queue-dragging .queue-drag-handle {
+    cursor: grabbing;
+}
+
+.queue-pending {
+    opacity: .65;
+}
+
+.queue-drag-handle:focus-visible {
+    outline: 3px solid #ffdba8;
+    outline-offset: 2px;
+}
