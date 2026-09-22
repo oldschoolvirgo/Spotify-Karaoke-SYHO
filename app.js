@@ -13,7 +13,7 @@ let popularLoadPromise = null;
 const GUEST_ID_STORAGE_KEY = "karaokeGuestId";
 const partyId = new URLSearchParams(window.location.search).get("partyId") || "";
 function isValidPartyId(value) {
-  return /^[a-zA-Z0-9_-]{1,80}$/.test(value);
+  return /^[0-9]{1,80}$/.test(value);
 }
 const validPartyId = isValidPartyId(partyId);
 const QUEUE_POLL_INTERVAL_MS = 5000;
@@ -34,6 +34,19 @@ function getGuestId() {
 }
 
 // This is only a rendering snapshot. D1 owns the persistent queue.
+let partyStatus = null, queuePollTimer = null, searchAbort = null;
+function inactiveParty(status = 'not_started') {
+  partyStatus = status;
+  clearInterval(queuePollTimer); queuePollTimer = null;
+  clearTimeout(selectionQueueTimer); selectionQueueTimer = null;
+  clearTimeout(announcementTimer); announcementTimer = null; announcement = null; announcementRevision++;
+  searchAbort?.abort();
+  queue = []; queueOpen = false; queueLoaded = false;
+  showScreen(joinScreen);
+  partyCodeInput.value = partyId;
+  updateSubmissionState();
+  partyCodeError.textContent = status === 'ended' ? 'This karaoke party has ended. Enter another Party ID.' : 'No active karaoke party was found for this Party ID. Retry or enter another ID.';
+}
 let queue = [];
 let queueLoaded = false;
 let queueError = "";
@@ -97,10 +110,12 @@ let selectedSong = null;
 let editingEntryId = null;
 
 function showScreen(screenToShow) {
+  if (partyStatus !== 'active') screenToShow = joinScreen;
   [joinScreen, searchScreen, selectionScreen, editScreen, successScreen].forEach((screen) => {
     screen.hidden = screen !== screenToShow;
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
+  updateQueueStatusCheck();
   syncSelectionQueuePolling();
 }
 
@@ -138,6 +153,7 @@ async function queueRequest(path = "/queue", method = "GET", data = {}) {
     throw new Error("Could not reach the shared queue. Check your connection and return to Tonight's Queue before retrying.");
   }
   const snapshot = await response.json();
+  if (snapshot.code === 'party_inactive') inactiveParty(snapshot.partyStatus);
   if (!response.ok) {
     const error = new Error(snapshot.error || "The shared queue is temporarily unavailable.");
     error.code = snapshot.code;
@@ -157,7 +173,7 @@ function showSongLimit(value) {
 }
 
 function shouldPollSelectionQueue() {
-  return validPartyId && queuePageActive && !document.hidden && !selectionScreen.hidden;
+  return partyStatus === 'active' && validPartyId && queuePageActive && !document.hidden && !selectionScreen.hidden;
 }
 
 function syncSelectionQueuePolling() {
@@ -182,7 +198,7 @@ function syncSelectionQueuePolling() {
 }
 
 function renderQueueStatus() {
-  document.querySelector('#queue-state').hidden = !validPartyId;
+  document.querySelector('#queue-state').hidden = !validPartyId || ['not_started','ended'].includes(partyStatus);
   document.querySelector('#queue-state').setAttribute('data-state', announcement ? 'announcement' : queueOpen === true ? 'open' : queueOpen === false ? 'closed' : 'unknown');
   const title = announcement ? announcement.title : queueOpen === true ? 'Queue Open' : queueOpen === false ? 'Queue Closed' : 'Checking queue status\u2026';
   const message = announcement ? announcement.message : queueOpen === false ? 'Existing songs will still play' : queueOpen === true && maxSongsPerGuest !== null ?
@@ -194,10 +210,17 @@ function renderQueueStatus() {
   if (messageElement.textContent !== message) messageElement.textContent = message;
 }
 
+function updateQueueStatusCheck() {
+  // Polling views discover reopening automatically, including between scheduled checks.
+  document.querySelector('#queue-status-check').hidden = partyStatus !== 'active' ||
+    !joinScreen.hidden || Boolean(announcement) || queueOpen !== false ||
+    queueIsVisible() || !selectionScreen.hidden;
+}
+
 function updateSubmissionState() {
-  singerForm.querySelector('button[type="submit"]').disabled = queueMutationPending || queueOpen === false;
+  singerForm.querySelector('button[type="submit"]').disabled = queueMutationPending || partyStatus !== 'active' || queueOpen === false;
   renderQueueStatus();
-  document.querySelector('#queue-status-check').hidden = Boolean(announcement) || queueOpen !== false;
+  updateQueueStatusCheck();
   document.querySelector('#queue-status-check').disabled = queueMutationPending || Boolean(queueRefreshPromise);
   syncSelectionQueuePolling();
 }
@@ -208,6 +231,20 @@ document.querySelector('#queue-status-check').addEventListener('click', async ()
 });
 
 function acceptQueue(snapshot) {
+  if (snapshot.partyId !== partyId || !['active','ended','not_started'].includes(snapshot.partyStatus)) throw Error('Invalid party response.');
+  if (partyStatus === 'ended') return;
+  if (snapshot.partyStatus !== 'active') { inactiveParty(snapshot.partyStatus); return; }
+  const firstActive = partyStatus !== 'active';
+  partyStatus = 'active';
+  if (firstActive) {
+    partyCodeError.textContent = '';
+    showScreen(searchScreen);
+    activeSongView = 'queue'; updateSongViewTabs();
+    resultsHeading.classList.add('is-tab-summary');
+    queuePollTimer = setInterval(() => {
+      if (partyStatus === 'active' && queuePageActive && !document.hidden && queueIsVisible()) void refreshQueue();
+    }, QUEUE_POLL_INTERVAL_MS);
+  }
   acceptAnnouncement(snapshot);
   if (typeof snapshot.queueOpen === 'boolean') queueOpen = snapshot.queueOpen;
   if (queueOpen === true && nameError.textContent === 'The karaoke queue is currently closed.') nameError.textContent = '';
@@ -234,6 +271,7 @@ function refreshQueue({ background = false } = {}) {
       if (revision === queueRevision) acceptQueue(snapshot);
     } catch (error) {
       if (revision === queueRevision && !queueRefreshSilent) queueError = error.message;
+      if (partyStatus === null) partyCodeError.textContent = 'Could not check this party. Retry or change Party ID.';
     } finally {
       queueRefreshPromise = null;
       if (!queueRefreshSilent || !queueError) document.querySelector('#queue-status-error').textContent = queueError ? 'Status refresh failed. Showing the last known queue status.' : '';
@@ -343,9 +381,13 @@ async function loadPopularSongs() {
 
   try {
     const headers = cached?.etag ? { "If-None-Match": cached.etag } : {};
-    const response = await fetch(`${SEARCH_API_BASE_URL}/popular`, { headers });
+    const response = await fetch(`${SEARCH_API_BASE_URL}/popular?partyId=${encodeURIComponent(partyId)}`, { headers });
     if (response.status === 304) return;
-    if (!response.ok) throw new Error(`Popular songs request returned ${response.status}`);
+    if (!response.ok) {
+      const failure = await response.json();
+      if (failure.code === 'party_inactive') inactiveParty(failure.partyStatus);
+      throw new Error(`Popular songs request returned ${response.status}`);
+    }
 
     const snapshot = await response.json();
     if (!Array.isArray(snapshot.tracks)) throw new Error("Popular songs response was invalid");
@@ -374,6 +416,7 @@ function showSongView(view) {
   hideQueueNotice();
   resultsHeading.classList.add("is-tab-summary");
   updateSongViewTabs();
+  updateQueueStatusCheck();
 
   if (view === "queue") {
     popularToggle.hidden = true;
@@ -403,27 +446,37 @@ function delay(milliseconds) {
 }
 
 async function requestSpotifySearch(query) {
+  if (partyStatus !== 'active') throw Error('No active party.');
   const controller = new AbortController();
+  searchAbort = controller;
   const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
 
   try {
     const createResponse = await fetch(`${SEARCH_API_BASE_URL}/search`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, partyId }),
       signal: controller.signal
     });
 
-    if (!createResponse.ok) throw new Error("Could not create search job");
+    if (!createResponse.ok) {
+      const failure = await createResponse.json();
+      if (failure.code === 'party_inactive') inactiveParty(failure.partyStatus);
+      throw new Error(failure.error || 'Could not create search job');
+    }
     const { jobId } = await createResponse.json();
     if (!jobId) throw new Error("Search job response did not include an ID");
 
     while (!controller.signal.aborted) {
       await delay(SEARCH_POLL_INTERVAL_MS);
-      const statusResponse = await fetch(`${SEARCH_API_BASE_URL}/search/${encodeURIComponent(jobId)}`, {
+      const statusResponse = await fetch(`${SEARCH_API_BASE_URL}/search/${encodeURIComponent(jobId)}?partyId=${encodeURIComponent(partyId)}`, {
         signal: controller.signal
       });
-      if (!statusResponse.ok) throw new Error("Could not read search job");
+      if (!statusResponse.ok) {
+        const failure = await statusResponse.json();
+        if (failure.code === 'party_inactive') inactiveParty(failure.partyStatus);
+        throw new Error(failure.error || 'Could not read search job');
+      }
 
       const job = await statusResponse.json();
       if (job.status === "complete") return job.results;
@@ -433,6 +486,7 @@ async function requestSpotifySearch(query) {
     throw new Error("Search job timed out");
   } finally {
     clearTimeout(timeout);
+    if (searchAbort === controller) searchAbort = null;
   }
 }
 
@@ -577,7 +631,7 @@ function selectSong(song) {
   nameError.textContent = "";
   showScreen(selectionScreen);
   updateSubmissionState();
-  void refreshQueue(); // One-shot refresh; selection does not enable recurring polling.
+  void refreshQueue(); // Refresh on entry in addition to the 15-second selection checks.
   singerNameInput.focus();
 }
 
@@ -594,6 +648,7 @@ searchForm.addEventListener("submit", async (event) => {
 
   resultsTitle.textContent = "Search results";
   resultsHeading.classList.remove("is-tab-summary");
+  updateQueueStatusCheck();
   resultCount.textContent = "";
   songResults.innerHTML = '<div class="empty-state">Searching Spotify...</div>';
   popularToggle.hidden = true;
@@ -791,7 +846,7 @@ joinForm.addEventListener("submit", (event) => {
   const code = partyCodeInput.value.trim();
   if (!isValidPartyId(code)) {
     partyCodeError.textContent = code
-      ? "Use 1 to 80 letters, numbers, underscores (_) or hyphens (-) for your party code."
+      ? "Use 1 to 80 digits for your party code."
       : "Please enter tonight's party code.";
     partyCodeInput.setAttribute("aria-invalid", "true");
     partyCodeInput.focus();
@@ -809,11 +864,10 @@ partyCodeInput.addEventListener("input", () => {
 });
 
 if (validPartyId) {
-  showScreen(searchScreen);
-  showSongView("queue");
-  setInterval(() => {
-    if (!document.hidden && queueIsVisible()) void refreshQueue();
-  }, QUEUE_POLL_INTERVAL_MS);
+  showScreen(joinScreen);
+  partyCodeInput.value = partyId;
+  partyCodeError.textContent = 'Checking party...';
+  void refreshQueue();
   document.addEventListener("visibilitychange", () => {
     syncSelectionQueuePolling();
     if (!document.hidden && queuePageActive) {

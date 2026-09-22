@@ -41,7 +41,7 @@
       </div>
       <form id="join-form" novalidate>
         <label for="party-code">Enter tonight's party code:</label>
-        <input id="party-code" name="partyId" type="text" placeholder="1234" autocomplete="off" autocapitalize="none"
+        <input id="party-code" name="partyId" type="text" inputmode="numeric" pattern="[0-9]{1,80}" maxlength="80" placeholder="1234" autocomplete="off" autocapitalize="none"
           spellcheck="false" enterkeyhint="go" aria-describedby="party-code-error" />
         <p id="party-code-error" class="error-message" role="alert"></p>
         <button class="primary-button" type="submit">Join</button>

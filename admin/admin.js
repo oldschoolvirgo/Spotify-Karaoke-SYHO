@@ -9,10 +9,52 @@
   let waitingNodes = new Map();
   let settingsRevision = 0, settingsPending = false, settingsDirty = false, settingsLimit = null;
   let settingsOpen = null;
+  let lifecycleStatus = null, lifecyclePending = false, lifecycleRevision = 0, pollSequence = 0;
+  function acceptLifecycle(data) {
+    if (data.partyId !== party || !['not_started','active','ended'].includes(data.partyStatus)) return;
+    if (lifecycleStatus === 'ended' && data.partyStatus !== 'ended') return;
+    lifecycleStatus = data.partyStatus;
+    $('party-status').textContent = { not_started: 'NOT STARTED', active: 'ACTIVE', ended: 'ENDED - This Party ID has already been used.' }[lifecycleStatus];
+    $('party-times').textContent = [data.startedAt == null ? '' : `Started: ${new Date(data.startedAt).toLocaleString()}`,
+      data.endedAt == null ? '' : `Ended: ${new Date(data.endedAt).toLocaleString()}`].filter(Boolean).join(' | ');
+    $('party-start').hidden = lifecycleStatus !== 'not_started';
+    $('party-end').hidden = lifecycleStatus !== 'active';
+    $('announcement-send').disabled = lifecyclePending || lifecycleStatus !== 'active' || announcementPending;
+    updateSettingsControls(); updateButtons(); updateQueueControls();
+  }
+  async function changeLifecycle(action) {
+    if (!token || !party || lifecyclePending || lifecycleStatus !== (action === 'start' ? 'not_started' : 'active')) return;
+    const revision = generation, selected = party;
+    lifecyclePending = true; lifecycleRevision++;
+    $('party-start').disabled = $('party-end').disabled = $('party-end-confirm').disabled = true;
+    $('party-message').textContent = action === 'start' ? 'Starting...' : 'Ending...';
+    try {
+      const data = await request(`/admin/party/${action}`, 'POST', { partyId: selected });
+      if (revision !== generation) return;
+      if (data.partyId !== selected || data.partyStatus !== (action === 'start' ? 'active' : 'ended')) throw Error('Invalid lifecycle response.');
+      acceptLifecycle(data); acceptSettings(data);
+      $('party-message').textContent = action === 'start' ? 'Party started.' : 'Party permanently ended.';
+    } catch (error) {
+      if (revision !== generation) return;
+      if (error.status === 401) { clearSession('Session expired.'); return; }
+      $('party-message').textContent = error.message + ' Refresh the party before retrying.';
+    } finally {
+      if (revision === generation) {
+        lifecyclePending = false; lifecycleRevision++;
+        $('party-start').disabled = $('party-end').disabled = $('party-end-confirm').disabled = false;
+        $('party-end-dialog').close();
+        clearTimeout(timer); void poll(generation);
+      }
+    }
+  }
+  $('party-start').addEventListener('click', () => changeLifecycle('start'));
+  $('party-end').addEventListener('click', () => { if (!lifecyclePending && lifecycleStatus === 'active') $('party-end-dialog').showModal(); });
+  $('party-end-cancel').addEventListener('click', () => $('party-end-dialog').close());
+  $('party-end-confirm').addEventListener('click', () => changeLifecycle('end'));
   let announcementPending = false;
   $('announcement-form').addEventListener('submit', async event => {
     event.preventDefault();
-    if (!token || !party || announcementPending) return;
+    if (!token || !party || lifecycleStatus !== 'active' || announcementPending) return;
     const title = $('announcement-title').value.trim(), text = $('announcement-message').value.trim();
     if (!title && !text) { $('announcement-status').textContent = 'Enter a title or message.'; return; }
     const revision = generation, selected = party;
@@ -30,13 +72,13 @@
       $('announcement-status').textContent = error.status === 400 ? 'Announcement rejected. Use text within a 16 KiB request.' :
         'Send unconfirmed. Your draft is retained; sending again publishes a new announcement.';
     } finally {
-      if (revision === generation) { announcementPending = false; $('announcement-send').disabled = !token || !party; }
+      if (revision === generation) { announcementPending = false; $('announcement-send').disabled = !token || !party || lifecycleStatus !== 'active'; }
     }
   });
   function updateSettingsControls() {
-    $('song-limit').disabled = settingsPending || settingsLimit === null;
-    $('settings-save').disabled = settingsPending || settingsLimit === null;
-    $('queue-state-action').disabled = settingsPending || settingsOpen === null;
+    $('song-limit').disabled = lifecycleStatus !== 'active' || settingsPending || settingsLimit === null;
+    $('settings-save').disabled = lifecycleStatus !== 'active' || settingsPending || settingsLimit === null;
+    $('queue-state-action').disabled = lifecycleStatus !== 'active' || settingsPending || settingsOpen === null;
   }
   function acceptSettings(data) {
     if (data.partyId !== party || !Number.isInteger(data.maxSongsPerGuest) || data.maxSongsPerGuest < 1 || data.maxSongsPerGuest > 20) return;
@@ -53,7 +95,7 @@
   const commandButtons = { 'send-ping': 'ping', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next' };
   function updateButtons() {
     for (const [id, type] of Object.entries(commandButtons)) {
-      $(id).disabled = creatingCommand || !workerRuntime || Boolean(commandRequest?.command && !terminalCommand(commandRequest.command.status)) || Boolean(commandRequest && !commandRequest.command && commandRequest.body.type !== type);
+      $(id).disabled = lifecycleStatus !== 'active' || creatingCommand || !workerRuntime || Boolean(commandRequest?.command && !terminalCommand(commandRequest.command.status)) || Boolean(commandRequest && !commandRequest.command && commandRequest.body.type !== type);
     }
   }
   const terminalCommand = status => ['succeeded', 'failed', 'expired'].includes(status);
@@ -62,7 +104,12 @@
   }
   const message = text => { $('message').textContent = text; };
   function clearData() {
-    announcementPending = false; $('announcement-send').disabled = !token || !party;
+    lifecycleStatus = null; lifecyclePending = false; lifecycleRevision++;
+    $('party-status').textContent = 'Select a party'; $('party-times').textContent = ''; $('party-message').textContent = '';
+    $('party-start').hidden = $('party-end').hidden = true;
+    $('party-start').disabled = $('party-end').disabled = $('party-end-confirm').disabled = false;
+    $('party-end-dialog').close();
+    announcementPending = false; $('announcement-send').disabled = !token || !party || lifecycleStatus !== 'active';
     $('announcement-title').value = ''; $('announcement-message').value = ''; $('announcement-status').textContent = '';
     $('estimate-count').textContent = 'Queue not loaded';
     $('estimate-duration').textContent = 'Duration unavailable';
@@ -102,6 +149,8 @@
     if (!response.ok) {
       const error = new Error(response.status === 429 ? `Too many attempts. Try again in ${response.headers.get('Retry-After') || '900'} seconds.` :
         response.status === 401 ? 'Invalid or expired credentials.' : 'Service unavailable. Try again.');
+      const detail = await response.json().catch(() => ({}));
+      if (detail.error && response.status === 409) error.message = detail.error;
       error.status = response.status; throw error;
     }
     return response.json();
@@ -109,7 +158,7 @@
   $('song-limit').addEventListener('input', () => { settingsDirty = true; });
   $('settings-form').addEventListener('submit', async event => {
     event.preventDefault();
-    if (!token || !party || settingsPending || settingsLimit === null) return;
+    if (!token || !party || lifecycleStatus !== 'active' || settingsPending || settingsLimit === null) return;
     const value = Number($('song-limit').value);
     if (!Number.isInteger(value) || value < 1 || value > 20) {
       $('settings-message').textContent = 'Enter a whole number from 1 to 20.'; return;
@@ -117,7 +166,7 @@
     await saveSettings({ maxSongsPerGuest: value });
   });
   $('queue-state-action').addEventListener('click', async () => {
-    if (!token || !party || settingsPending || settingsOpen === null) return;
+    if (!token || !party || lifecycleStatus !== 'active' || settingsPending || settingsOpen === null) return;
     await saveSettings({ queueOpen: !settingsOpen });
   });
   async function saveSettings(changes) {
@@ -222,7 +271,7 @@
           const controls = document.createElement('div'); controls.className = 'queue-controls';
           for (const [action, label] of [['edit', 'Edit Singer'], ['remove', 'Remove']]) {
             const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
-            button.disabled = Boolean(queueAction) || queuePending;
+            button.disabled = lifecycleStatus !== 'active' || Boolean(queueAction) || queuePending;
             button.addEventListener('click', () => openQueueAction(entry.id, action));
             controls.appendChild(button); queueControls.push(button);
           }
@@ -260,8 +309,8 @@
     updateQueueControls();
   }
   function updateQueueControls() {
-    for (const button of queueControls) button.disabled = Boolean(queueAction) || queuePending || Boolean(queueDrag);
-    for (const [id, { handle }] of waitingNodes) handle.disabled = Boolean(queueAction) || queuePending || waitingNodes.size < 2 || Boolean(queueDrag && queueDrag.id !== id);
+    for (const button of queueControls) button.disabled = lifecycleStatus !== 'active' || Boolean(queueAction) || queuePending || Boolean(queueDrag);
+    for (const [id, { handle }] of waitingNodes) handle.disabled = lifecycleStatus !== 'active' || Boolean(queueAction) || queuePending || waitingNodes.size < 2 || Boolean(queueDrag && queueDrag.id !== id);
     $('waiting').classList.toggle('queue-pending', queuePending);
     $('waiting').setAttribute('aria-busy', String(queuePending));
     for (const id of ['queue-save', 'queue-cancel', 'queue-singer']) $(id).disabled = queuePending;
@@ -457,6 +506,7 @@
     }
   });
   async function poll(revision) {
+    const polling = ++pollSequence;
     if (!token || revision !== generation || !party) return;
     if (Date.now() >= expiresAt) { clearSession('Session expired. Enter your PIN again.'); return; }
     try {
@@ -464,11 +514,11 @@
       const tracking = commandRequest;
       const pollCommand = tracking?.command && !terminalCommand(tracking.command.status);
       const localQueueRevision = queueRevision, read = ++queueRead;
-      const localSettingsRevision = settingsRevision;
+      const localSettingsRevision = settingsRevision, localLifecycleRevision = lifecycleRevision;
       const reads = [request('/admin/queue' + query), request('/admin/state' + query)];
       if (pollCommand) reads.push(request(`/admin/commands/${encodeURIComponent(tracking.command.id)}` + query));
       const results = await Promise.allSettled(reads);
-      if (revision !== generation || !token) return;
+      if (revision !== generation || !token || polling !== pollSequence) return;
       const unauthorized = results.some(r => r.status === 'rejected' && r.reason.status === 401);
       if (unauthorized) { clearSession('Session expired or revoked. Enter your PIN again.'); return; }
       if (pollCommand && tracking === commandRequest && results[2].status === 'fulfilled') {
@@ -480,7 +530,10 @@
       if (failed) throw failed.reason;
       const [queue, state] = results.map(r => r.value);
       if (queue.partyId !== party || state.partyId !== party || !Array.isArray(queue.entries)) throw Error('Invalid party response.');
-      if (!settingsPending && localSettingsRevision === settingsRevision) acceptSettings(queue);
+      if (!lifecyclePending && localLifecycleRevision === lifecycleRevision) {
+        acceptLifecycle(queue);
+        if (!settingsPending && localSettingsRevision === settingsRevision) acceptSettings(queue);
+      }
       if (!queuePending && !queueDrag && localQueueRevision === queueRevision && read === queueRead) renderQueue(queue);
       workerRuntime = state.status === 'recent' ? state.worker?.runtimeId : null;
       updateButtons();
@@ -498,13 +551,13 @@
         message(error.message);
       }
     } finally {
-      if (token && revision === generation) timer = setTimeout(() => poll(revision), 5000);
+      if (token && revision === generation && polling === pollSequence) timer = setTimeout(() => poll(revision), 5000);
     }
   }
   $('party-form').addEventListener('submit', event => {
     event.preventDefault();
     const selected = $('party').value.trim();
-    if (!token || !/^[a-zA-Z0-9_-]{1,80}$/.test(selected)) { message('Enter a valid Party ID.'); return; }
+    if (!token || !/^[0-9]{1,80}$/.test(selected)) { message('Enter a valid Party ID.'); return; }
     clearTimeout(timer); generation++; party = selected; clearData();
     $('selected-party').textContent = `Party: ${party}`;
     void poll(generation);

@@ -1,64 +1,127 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://karaoke-search-relay.oldschoolvirgo.workers.dev; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>SYHO Host</title><link rel="stylesheet" href="admin.css"><script src="admin.js" defer></script>
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; connect-src https://karaoke-search-relay.oldschoolvirgo.workers.dev; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>SYHO Host</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="admin.js" defer></script>
 </head>
-<body><main>
-  <header><h1>SYHO Host</h1><p>Admin foundation</p></header>
-  <p id="message" role="status" aria-live="polite"></p>
-  <form id="login-form">
-    <label for="pin">Six-digit host PIN</label>
-    <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required>
-    <button id="login-button" type="submit">Sign in</button>
-  </form>
-  <section id="dashboard" hidden>
-    <button id="logout" type="button">Sign out</button>
-    <form id="party-form"><label for="party">Party ID</label>
-      <input id="party" maxlength="80" pattern="[a-zA-Z0-9_\-]{1,80}" autocapitalize="none" spellcheck="false" required>
-      <button type="submit">View party</button>
+
+<body>
+  <main>
+    <header>
+      <h1>SYHO Host</h1>
+      <p>Admin foundation</p>
+    </header>
+    <p id="message" role="status" aria-live="polite"></p>
+    <form id="login-form">
+      <label for="pin">Six-digit host PIN</label>
+      <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6"
+        autocomplete="off" required>
+      <button id="login-button" type="submit">Sign in</button>
     </form>
-    <h2 id="selected-party">Select a party</h2>
-    <p id="freshness">No data loaded</p>
-    <section aria-labelledby="estimate-title"><h2 id="estimate-title">Estimated Queue</h2>
-      <p id="estimate-count">Queue not loaded</p><p id="estimate-duration">Duration unavailable</p><p id="estimate-end">Est. end: --</p>
-      <p id="estimate-unknown" class="hint"></p>
-      <p class="hint">Approximate, assuming continuous playback. Includes full playing-song durations.</p>
-    </section>
-    <form id="settings-form">
-      <label for="song-limit">Max Songs Per Guest</label>
-      <input id="song-limit" type="number" min="1" max="20" step="1" required disabled>
-      <p id="settings-current" class="hint">Current limit: not loaded</p>
-      <button id="settings-save" type="submit" disabled>Save</button>
-      <p id="queue-state-current" class="hint">Queue status: not loaded</p>
-      <button id="queue-state-action" type="button" disabled>Close queue</button>
-      <p id="settings-message" role="status" aria-live="polite"></p>
-    </form>
-    <form id="announcement-form" aria-labelledby="announcement-heading">
-      <h2 id="announcement-heading">Announcement</h2>
-      <label for="announcement-title">Title</label><input id="announcement-title" type="text">
-      <label for="announcement-message">Message</label><textarea id="announcement-message" rows="3"></textarea>
-      <p class="hint">Keep announcements concise for easy reading on guest phones.</p>
-      <button id="announcement-send" type="submit" disabled>Send Announcement</button>
-      <p id="announcement-status" role="status" aria-live="polite"></p>
-    </form>
-    <section><h2>Player</h2><div class="player-controls"><button id="send-restart" type="button" disabled>RESTART</button><button id="send-play-pause" type="button" disabled>PLAY / PAUSE</button><button id="send-next" type="button" disabled>NEXT</button></div></section>
-    <section><h2>Loudness</h2><button id="send-normal" type="button" disabled>NORMAL</button> <button id="send-loud" type="button" disabled>LOUD THIS SONG</button><p class="hint">Command results only. Loud returns to Normal locally when the track changes; current loudness is not reported here.</p><button id="send-ping" type="button" disabled>Send Ping</button><p id="command-status" role="status">No command sent.</p></section>
-    <section><h2>Worker</h2><p id="worker-status">No data loaded</p><p id="worker-contact"></p><p id="current-uri"></p></section>
-    <section><h2>Playing - D1 state</h2><p class="hint">May include historical playing rows. Spotify's loaded track is shown separately.</p><ul id="playing"></ul></section>
-    <section><h2>Up next</h2><ul id="up-next"></ul></section>
-    <section><h2>Waiting</h2><p id="reorder-help" class="hint">Drag a Move handle to reorder waiting songs. With a keyboard, press Space or Enter to pick up, use arrow keys to move, then Space or Enter to save. Escape cancels. Up Next is committed.</p><p id="queue-message" role="status" aria-live="polite"></p><ul id="waiting"></ul></section>
-    <dialog id="queue-dialog" aria-labelledby="queue-title" aria-describedby="queue-context">
-      <form id="queue-form">
-        <h2 id="queue-title">Edit Singer</h2><p id="queue-context"></p>
-        <div id="queue-singer-field"><label for="queue-singer">Singer name</label>
-          <input id="queue-singer" maxlength="40" autocomplete="off" required>
-        </div>
-        <p id="queue-error" role="alert"></p>
-        <div class="queue-controls"><button id="queue-cancel" type="button">Cancel</button><button id="queue-save" type="submit">Save</button></div>
+    <section id="dashboard" hidden>
+      <button id="logout" type="button">Sign out</button>
+      <form id="party-form"><label for="party">Party ID</label>
+        <input id="party" maxlength="80" inputmode="numeric" pattern="[0-9]{1,80}" autocapitalize="none"
+          spellcheck="false" required>
+        <button type="submit">View party</button>
       </form>
-    </dialog>
-  </section>
-</main></body></html>
+      <h2 id="selected-party">Select a party</h2>
+      <section aria-label="Party lifecycle">
+        <p id="party-status">Select a party</p>
+        <p id="party-times"></p>
+        <button id="party-start" type="button" hidden>Start Party</button>
+        <button id="party-end" type="button" hidden>End Party</button>
+        <p id="party-message" role="status"></p>
+        <dialog id="party-end-dialog">
+          <p>End this party permanently? This Party ID can never be started again. Existing Spotify playback is not
+            cleared.</p>
+          <button id="party-end-cancel" type="button">Cancel</button>
+          <button id="party-end-confirm" type="button">End Party permanently</button>
+        </dialog>
+      </section>
+      <p id="freshness">No data loaded</p>
+      <section aria-labelledby="estimate-title">
+        <h2 id="estimate-title">Estimated Queue</h2>
+        <p id="estimate-count">Queue not loaded</p>
+        <p id="estimate-duration">Duration unavailable</p>
+        <p id="estimate-end">Est. end: --</p>
+        <p id="estimate-unknown" class="hint"></p>
+        <p class="hint">Approximate, assuming continuous playback. Includes full playing-song durations.</p>
+      </section>
+      <form id="settings-form">
+        <label for="song-limit">Max Songs Per Guest</label>
+        <input id="song-limit" type="number" min="1" max="20" step="1" required disabled>
+        <p id="settings-current" class="hint">Current limit: not loaded</p>
+        <button id="settings-save" type="submit" disabled>Save</button>
+        <p id="queue-state-current" class="hint">Queue status: not loaded</p>
+        <button id="queue-state-action" type="button" disabled>Close queue</button>
+        <p id="settings-message" role="status" aria-live="polite"></p>
+      </form>
+      <form id="announcement-form" aria-labelledby="announcement-heading">
+        <h2 id="announcement-heading">Announcement</h2>
+        <label for="announcement-title">Title</label><input id="announcement-title" type="text">
+        <label for="announcement-message">Message</label><textarea id="announcement-message" rows="3"></textarea>
+        <p class="hint">Keep announcements concise for easy reading on guest phones.</p>
+        <button id="announcement-send" type="submit" disabled>Send Announcement</button>
+        <p id="announcement-status" role="status" aria-live="polite"></p>
+      </form>
+      <section>
+        <h2>Player</h2>
+        <div class="player-controls"><button id="send-restart" type="button" disabled>RESTART</button><button
+            id="send-play-pause" type="button" disabled>PLAY / PAUSE</button><button id="send-next" type="button"
+            disabled>NEXT</button></div>
+      </section>
+      <section>
+        <h2>Loudness</h2><button id="send-normal" type="button" disabled>NORMAL</button> <button id="send-loud"
+          type="button" disabled>LOUD THIS SONG</button>
+        <p class="hint">Command results only. Loud returns to Normal locally when the track changes; current loudness is
+          not reported here.</p><button id="send-ping" type="button" disabled>Send Ping</button>
+        <p id="command-status" role="status">No command sent.</p>
+      </section>
+      <section>
+        <h2>Worker</h2>
+        <p id="worker-status">No data loaded</p>
+        <p id="worker-contact"></p>
+        <p id="current-uri"></p>
+      </section>
+      <section>
+        <h2>Playing - D1 state</h2>
+        <p class="hint">May include historical playing rows. Spotify's loaded track is shown separately.</p>
+        <ul id="playing"></ul>
+      </section>
+      <section>
+        <h2>Up next</h2>
+        <ul id="up-next"></ul>
+      </section>
+      <section>
+        <h2>Waiting</h2>
+        <p id="reorder-help" class="hint">Drag a Move handle to reorder waiting songs. With a keyboard, press Space or
+          Enter to pick up, use arrow keys to move, then Space or Enter to save. Escape cancels. Up Next is committed.
+        </p>
+        <p id="queue-message" role="status" aria-live="polite"></p>
+        <ul id="waiting"></ul>
+      </section>
+      <dialog id="queue-dialog" aria-labelledby="queue-title" aria-describedby="queue-context">
+        <form id="queue-form">
+          <h2 id="queue-title">Edit Singer</h2>
+          <p id="queue-context"></p>
+          <div id="queue-singer-field"><label for="queue-singer">Singer name</label>
+            <input id="queue-singer" maxlength="40" autocomplete="off" required>
+          </div>
+          <p id="queue-error" role="alert"></p>
+          <div class="queue-controls"><button id="queue-cancel" type="button">Cancel</button><button id="queue-save"
+              type="submit">Save</button></div>
+        </form>
+      </dialog>
+    </section>
+  </main>
+</body>
+
+</html>
