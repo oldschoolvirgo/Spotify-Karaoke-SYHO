@@ -79,10 +79,14 @@
             disabled>NEXT</button></div>
       </section>
       <section>
-        <h2>Loudness</h2><button id="send-normal" type="button" disabled>NORMAL</button> <button id="send-loud"
-          type="button" disabled>LOUD THIS SONG</button>
-        <p class="hint">Command results only. Loud returns to Normal locally when the track changes; current loudness is
-          not reported here.</p><button id="send-ping" type="button" disabled>Send Ping</button>
+        <h2>Loudness</h2>
+        <button id="send-off" type="button" aria-pressed="false" disabled>Off</button>
+        <button id="send-quiet" type="button" aria-pressed="false" disabled>Quiet</button>
+        <button id="send-normal" type="button" aria-pressed="false" disabled>Normal</button>
+        <button id="send-loud" type="button" aria-pressed="false" disabled>Loud</button>
+        <p id="loudness-state" role="status">Loudness: Unavailable</p>
+        <p class="hint">Quiet, Normal and Loud apply to this song only. Track changes return to Off.
+          Confirmed laptop state updates with the dashboard.</p><button id="send-ping" type="button" disabled>Send Ping</button>
         <p id="command-status" role="status">No command sent.</p>
       </section>
       <section>

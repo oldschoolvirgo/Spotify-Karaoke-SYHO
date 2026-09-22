@@ -2,6 +2,8 @@
   const API = 'https://karaoke-search-relay.oldschoolvirgo.workers.dev';
   const $ = id => document.getElementById(id);
   let token = null, expiresAt = 0, generation = 0, party = '', timer, expiryTimer;
+  let loudnessTarget = null;
+  let workerLoudness = 'unavailable';
   let workerRuntime = null, commandRequest = null, creatingCommand = false;
   let queueEntries = [], queueAction = null, queuePending = false, queueRevision = 0, queueRead = 0;
   let queueControls = [];
@@ -92,10 +94,23 @@
     }
     updateSettingsControls();
   }
-  const commandButtons = { 'send-ping': 'ping', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next' };
+  const commandButtons = { 'send-ping': 'ping', 'send-off': 'off', 'send-quiet': 'quiet_this_song', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next' };
+  const temporaryCommands = ['quiet_this_song', 'normal', 'loud_this_song'];
+  const confirmedModes = ['off', 'quiet', 'normal', 'loud'];
+  function renderLoudness(worker = null) {
+    workerLoudness = worker && Number.isSafeInteger(worker.trackRevision) && worker.trackRevision > 0 &&
+      [...confirmedModes, 'pending', 'uncertain'].includes(worker.loudnessState) ? worker.loudnessState : 'unavailable';
+    loudnessTarget = worker && /^spotify:track:[a-zA-Z0-9]{22}$/.test(worker.currentUri || '') &&
+      Number.isSafeInteger(worker.trackRevision) && worker.trackRevision > 0 ? { targetUri: worker.currentUri, trackRevision: worker.trackRevision } : null;
+    if (!loudnessTarget && ['quiet', 'normal', 'loud'].includes(workerLoudness)) workerLoudness = 'unavailable';
+    $('loudness-state').textContent = `Loudness: ${workerLoudness[0].toUpperCase() + workerLoudness.slice(1)}`;
+    for (const mode of confirmedModes) $('send-' + mode).setAttribute('aria-pressed', String(workerLoudness === mode));
+  }
   function updateButtons() {
     for (const [id, type] of Object.entries(commandButtons)) {
-      $(id).disabled = lifecycleStatus !== 'active' || creatingCommand || !workerRuntime || Boolean(commandRequest?.command && !terminalCommand(commandRequest.command.status)) || Boolean(commandRequest && !commandRequest.command && commandRequest.body.type !== type);
+      const retry = commandRequest && !commandRequest.command && commandRequest.body.type === type;
+      $(id).disabled = (temporaryCommands.includes(type) && !retry && (!loudnessTarget || !confirmedModes.includes(workerLoudness))) ||
+        (type === 'off' && workerLoudness === 'unavailable') || lifecycleStatus !== 'active' || creatingCommand || !workerRuntime || Boolean(commandRequest?.command && !terminalCommand(commandRequest.command.status)) || Boolean(commandRequest && !commandRequest.command && commandRequest.body.type !== type);
     }
   }
   const terminalCommand = status => ['succeeded', 'failed', 'expired'].includes(status);
@@ -129,6 +144,7 @@
     $('selected-party').textContent = 'Select a party';
     $('freshness').textContent = 'No data loaded';
     $('worker-status').textContent = 'No data loaded';
+    renderLoudness();
     workerRuntime = null; commandRequest = null; creatingCommand = false;
     $('send-ping').disabled = true; $('send-ping').textContent = 'Send Ping';
     updateButtons();
@@ -476,10 +492,10 @@
     }
   });
   for (const [buttonId, type] of Object.entries(commandButtons)) $(buttonId).addEventListener('click', async () => {
-    if (!token || !party || !workerRuntime || creatingCommand || (commandRequest?.command && !terminalCommand(commandRequest.command.status))) return;
+    if ($(buttonId).disabled || !token || !party || !workerRuntime || creatingCommand || (commandRequest?.command && !terminalCommand(commandRequest.command.status))) return;
     if (commandRequest && !commandRequest.command && commandRequest.body.type !== type) return;
     // Keep the same request ID/body after ambiguous creation failures.
-    if (!commandRequest || commandRequest.command) commandRequest = { body: { partyId: party, runtimeId: workerRuntime, requestId: crypto.randomUUID(), type } };
+    if (!commandRequest || commandRequest.command) commandRequest = { body: { partyId: party, runtimeId: workerRuntime, requestId: crypto.randomUUID(), type, ...(temporaryCommands.includes(type) ? loudnessTarget : {}) } };
     const attempt = commandRequest, revision = generation;
     creatingCommand = true; updateButtons();
     $('command-status').textContent = `Submitting ${type} - execution not yet confirmed.`;
@@ -493,7 +509,7 @@
       if (error.status === 401) { clearSession('Session expired or revoked. Enter your PIN again.'); return; }
       if (error.status >= 400 && error.status < 500 && error.status !== 429) {
         commandRequest = null;
-        $('command-status').textContent = 'Command rejected. A recent matching worker is required.';
+        $('command-status').textContent = 'Command rejected. Refresh the worker/track state before trying again.';
       } else {
         $('command-status').textContent = 'Creation unconfirmed. Press the same button to retry with the same request ID.';
       }
@@ -536,6 +552,7 @@
       }
       if (!queuePending && !queueDrag && localQueueRevision === queueRevision && read === queueRead) renderQueue(queue);
       workerRuntime = state.status === 'recent' ? state.worker?.runtimeId : null;
+      renderLoudness(workerRuntime ? state.worker : null);
       updateButtons();
       $('worker-status').textContent = `Worker: ${state.status}`;
       $('worker-contact').textContent = state.worker ? `Last contact: ${new Date(state.worker.receivedAt).toLocaleTimeString()}` : 'No heartbeat received for this party.';
@@ -546,7 +563,7 @@
       if (revision === generation) {
         $('freshness').textContent = 'Data stale - refresh failed.';
         $('worker-status').textContent = 'Worker: unknown - status read failed.';
-        workerRuntime = null; updateButtons();
+        workerRuntime = null; renderLoudness(); updateButtons();
         if (commandRequest?.command && !terminalCommand(commandRequest.command.status)) $('command-status').textContent = `Command status stale - last confirmed: ${commandRequest.command.status} - ${commandRequest.command.id}`;
         message(error.message);
       }
