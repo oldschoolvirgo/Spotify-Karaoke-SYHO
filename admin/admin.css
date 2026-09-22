@@ -1,39 +1,39 @@
-@font-face {
-    font-family: "Inter";
-    src: url("../fonts/InterVariable.woff2") format("woff2");
-    font-weight: 100 900;
-    font-style: normal;
-    font-display: swap;
-}
-
-:root {
-    color-scheme: dark;
-    font: 16px "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #100b1c;
-    color: #f4effa;
-}
-
-body {
-    margin: 0;
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+/* Share the guest page's font, palette, background, headings, and input styles. */
+@import url("../styles.css");
 
 main {
-    max-width: 720px;
-    margin: auto;
-    padding: 24px;
+    width: min(100%, 680px);
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 20px 18px 40px;
 }
 
-h1 {
-    margin-bottom: 0;
+header {
+    margin-bottom: 26px;
+}
+
+header > p {
+    margin: 14px 0 0;
+    color: var(--muted);
+    line-height: 1.55;
 }
 
 h2 {
-    font-size: 1.15rem;
+    margin: 0 0 14px;
+    font-size: 1.05rem;
 }
 
 section {
     margin-top: 24px;
+}
+
+#dashboard > section,
+#settings-form,
+#announcement-form {
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: rgba(27, 20, 43, 0.92);
 }
 
 form {
@@ -42,127 +42,216 @@ form {
     margin: 24px 0;
 }
 
+form label {
+    margin-bottom: 0;
+}
+
+form h2,
+form p {
+    margin: 0;
+}
+
+#queue-singer-field label {
+    margin-bottom: 9px;
+}
+
 input,
 textarea,
 button {
-    box-sizing: border-box;
+    min-width: 0;
     font: inherit;
-    border-radius: 8px;
-    padding: 14px;
-    min-height: 48px;
 }
 
-input,
 textarea {
     width: 100%;
-    border: 1px solid #9888b0;
-    background: #20162e;
-    color: inherit;
-}
-
-textarea {
+    min-height: 112px;
+    padding: 14px 15px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    outline: 0;
+    background: var(--surface-raised);
+    color: var(--text);
     resize: vertical;
 }
 
+textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 79, 163, 0.15);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #998da9;
+}
+
 button {
-    border: 0;
-    background: #dfc0ff;
-    color: #241032;
-    cursor: pointer;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 10px 15px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f6efff;
+    color: #1b1029;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+button[type="submit"],
+#party-start,
+button[aria-pressed="true"] {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--accent), #bc5cff);
+    color: white;
+    box-shadow: 0 12px 28px rgba(221, 55, 149, 0.25);
+}
+
+form > button[type="submit"] {
+    width: 100%;
+    min-height: 56px;
+}
+
+#logout,
+#queue-cancel,
+#party-end-cancel,
+.queue-controls button,
+.queue-drag-handle {
+    background: transparent;
+    color: #ff91c5;
+}
+
+#queue-save {
+    color: white;
+    background: linear-gradient(135deg, var(--accent), #bc5cff);
+}
+
+#party-end,
+#party-end-confirm {
+    border-color: rgba(255, 142, 170, 0.38);
+    background: transparent;
+    color: var(--danger);
+    box-shadow: none;
+}
+
+button:focus-visible {
+    outline: 2px solid #f6efff;
+    outline-offset: 2px;
 }
 
 button:disabled {
-    opacity: .6;
+    background: var(--surface-raised);
+    color: var(--muted);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.65;
 }
 
 #pin {
-    letter-spacing: .5em;
+    letter-spacing: 0.5em;
     font-size: 1.5rem;
 }
 
 #logout {
-    float: right;
+    display: block;
+    margin-left: auto;
 }
 
-#message {
-    color: #ffdba8;
+p,
+li {
+    line-height: 1.55;
+}
+
+.hint,
+#freshness,
+#party-times,
+#worker-contact,
+#current-uri,
+#queue-context {
+    color: var(--muted);
 }
 
 .hint,
 #freshness {
-    color: #c7bbd5;
+    font-size: 0.82rem;
+}
+
+#message,
+#queue-error,
+#queue-message {
+    color: var(--danger);
 }
 
 ul {
-    padding-left: 24px;
+    display: grid;
+    gap: 12px;
+    padding: 0;
+    list-style: none;
 }
 
 li {
-    padding: 8px 0;
-}
-
-#current-uri {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
     overflow-wrap: anywhere;
 }
 
-[hidden] {
-    display: none !important;
-}
-
-.player-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
+.player-controls,
 .queue-controls {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.player-controls > button,
+.queue-controls > button {
+    flex: 1 1 auto;
+}
+
+.queue-controls {
     margin-top: 8px;
 }
 
 dialog {
-    box-sizing: border-box;
-    width: min(440px, calc(100% - 32px));
-    border: 1px solid #9888b0;
-    border-radius: 12px;
-    background: #20162e;
-    color: inherit;
-    padding: 20px;
+    width: min(calc(100% - 36px), 440px);
+    max-height: calc(100% - 36px);
+    overflow-y: auto;
+    padding: 25px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface-raised);
+    color: var(--text);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.58);
 }
 
 dialog::backdrop {
-    background: #0009;
+    background: rgba(8, 5, 15, 0.78);
+    backdrop-filter: blur(4px);
 }
 
 dialog form {
     margin: 0;
 }
 
-#queue-context {
-    overflow-wrap: anywhere;
+dialog h2 {
+    font-size: 1.45rem;
 }
 
-#queue-error,
-#queue-message {
-    color: #ffdba8;
+#party-end-dialog > button {
+    width: 100%;
+    margin-top: 10px;
 }
 
 .queue-drag-handle {
     touch-action: none;
     cursor: grab;
-    border: 1px solid #9888b0;
-    background: #30203f;
-    color: inherit;
     min-width: 64px;
     user-select: none;
 }
 
 .queue-dragging {
-    background: #30203f;
-    outline: 2px solid #dfc0ff;
-    border-radius: 8px;
+    background: var(--surface-raised);
+    outline: 2px solid var(--accent);
 }
 
 .queue-dragging .queue-drag-handle {
@@ -170,10 +259,11 @@ dialog form {
 }
 
 .queue-pending {
-    opacity: .65;
+    opacity: 0.65;
 }
 
-.queue-drag-handle:focus-visible {
-    outline: 3px solid #ffdba8;
-    outline-offset: 2px;
+@media (min-width: 540px) {
+    main {
+        padding-inline: 28px;
+    }
 }
