@@ -60,6 +60,12 @@
         <p id="estimate-unknown" class="hint"></p>
         <p class="hint">Approximate, assuming continuous playback. Includes full playing-song durations.</p>
       </section>
+      <section>
+        <h2>Player</h2>
+        <div class="player-controls"><button id="send-restart" type="button" disabled>RESTART</button><button
+            id="send-play-pause" type="button" disabled>PLAY / PAUSE</button><button id="send-next" type="button"
+            disabled>NEXT</button></div>
+      </section>
       <form id="settings-form">
         <label for="song-limit">Max Songs Per Guest</label>
         <input id="song-limit" type="number" min="1" max="20" step="1" required disabled>
@@ -69,12 +75,6 @@
         <button id="queue-state-action" type="button" disabled>Close queue</button>
         <p id="settings-message" role="status" aria-live="polite"></p>
       </form>
-      <section>
-        <h2>Player</h2>
-        <div class="player-controls"><button id="send-restart" type="button" disabled>RESTART</button><button
-            id="send-play-pause" type="button" disabled>PLAY / PAUSE</button><button id="send-next" type="button"
-            disabled>NEXT</button></div>
-      </section>
       <section>
         <h2>Worker</h2>
         <p id="worker-status">No data loaded</p>
