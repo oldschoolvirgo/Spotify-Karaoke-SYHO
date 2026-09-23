@@ -12,7 +12,7 @@ header {
     margin-bottom: 26px;
 }
 
-header > p {
+header>p {
     margin: 14px 0 0;
     color: var(--muted);
     line-height: 1.55;
@@ -27,7 +27,7 @@ section {
     margin-top: 24px;
 }
 
-#dashboard > section,
+#dashboard>section,
 #settings-form,
 #announcement-form {
     padding: 18px;
@@ -105,7 +105,7 @@ button[aria-pressed="true"] {
     box-shadow: 0 12px 28px rgba(221, 55, 149, 0.25);
 }
 
-form > button[type="submit"] {
+form>button[type="submit"] {
     width: 100%;
     min-height: 56px;
 }
@@ -203,8 +203,8 @@ li {
     gap: 8px;
 }
 
-.player-controls > button,
-.queue-controls > button {
+.player-controls>button,
+.queue-controls>button {
     flex: 1 1 auto;
 }
 
@@ -237,7 +237,7 @@ dialog h2 {
     font-size: 1.45rem;
 }
 
-#party-end-dialog > button {
+#party-end-dialog>button {
     width: 100%;
     margin-top: 10px;
 }
@@ -266,4 +266,9 @@ dialog h2 {
     main {
         padding-inline: 28px;
     }
+}
+
+#logout {
+    display: block;
+    margin: 0 auto;
 }

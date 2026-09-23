@@ -94,7 +94,7 @@
     }
     updateSettingsControls();
   }
-  const commandButtons = { 'send-ping': 'ping', 'send-off': 'off', 'send-quiet': 'quiet_this_song', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next' };
+  const commandButtons = { 'send-off': 'off', 'send-quiet': 'quiet_this_song', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next' };
   const temporaryCommands = ['quiet_this_song', 'normal', 'loud_this_song'];
   const confirmedModes = ['off', 'quiet', 'normal', 'loud'];
   function renderLoudness(worker = null) {
@@ -146,7 +146,6 @@
     $('worker-status').textContent = 'No data loaded';
     renderLoudness();
     workerRuntime = null; commandRequest = null; creatingCommand = false;
-    $('send-ping').disabled = true; $('send-ping').textContent = 'Send Ping';
     updateButtons();
     $('command-status').textContent = 'No command sent.';
   }
@@ -516,7 +515,6 @@
     } finally {
       if (revision === generation) {
         creatingCommand = false;
-        $('send-ping').textContent = commandRequest?.body.type === 'ping' && !commandRequest.command ? 'Retry Ping' : 'Send Ping';
         updateButtons();
       }
     }
