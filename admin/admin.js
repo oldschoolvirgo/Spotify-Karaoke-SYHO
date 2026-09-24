@@ -94,7 +94,7 @@
     }
     updateSettingsControls();
   }
-  const commandButtons = { 'send-off': 'off', 'send-quiet': 'quiet_this_song', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next' };
+  const commandButtons = { 'send-off': 'off', 'send-quiet': 'quiet_this_song', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next', 'send-reshuffle': 'reshuffle' };
   const temporaryCommands = ['quiet_this_song', 'normal', 'loud_this_song'];
   const confirmedModes = ['off', 'quiet', 'normal', 'loud'];
   function renderLoudness(worker = null) {
