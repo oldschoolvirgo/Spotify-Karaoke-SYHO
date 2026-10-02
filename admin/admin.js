@@ -3,6 +3,18 @@
   const $ = id => document.getElementById(id);
   let token = null, expiresAt = 0, generation = 0, party = '', timer, expiryTimer;
   let loudnessTarget = null;
+  let volumePercent = 80, lastWorkerVolume = null, lastVolumeResetAt = null;
+  function renderVolume() {
+    $('volume-value').textContent = `${volumePercent}%`;
+    const locked = creatingCommand || Boolean(commandRequest && (!commandRequest.command || !terminalCommand(commandRequest.command.status)));
+    $('volume-down').disabled = locked || volumePercent === 0;
+    $('volume-up').disabled = locked || volumePercent === 100;
+  }
+  for (const [id, step] of [['volume-down', -5], ['volume-up', 5]]) $(id).addEventListener('click', () => {
+    if ($(id).disabled) return;
+    volumePercent = Math.max(0, Math.min(100, volumePercent + step));
+    renderVolume();
+  });
   let workerLoudness = 'unavailable';
   let workerRuntime = null, commandRequest = null, creatingCommand = false;
   let queueEntries = [], queueAction = null, queuePending = false, queueRevision = 0, queueRead = 0;
@@ -94,7 +106,7 @@
     }
     updateSettingsControls();
   }
-  const commandButtons = { 'send-off': 'off', 'send-quiet': 'quiet_this_song', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next', 'send-reshuffle': 'reshuffle' };
+  const commandButtons = { 'send-volume': 'set_volume', 'send-off': 'off', 'send-quiet': 'quiet_this_song', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next', 'send-reshuffle': 'reshuffle' };
   const temporaryCommands = ['quiet_this_song', 'normal', 'loud_this_song'];
   const confirmedModes = ['off', 'quiet', 'normal', 'loud'];
   function renderLoudness(worker = null) {
@@ -107,6 +119,7 @@
     for (const mode of confirmedModes) $('send-' + mode).setAttribute('aria-pressed', String(workerLoudness === mode));
   }
   function updateButtons() {
+    renderVolume();
     for (const [id, type] of Object.entries(commandButtons)) {
       const retry = commandRequest && !commandRequest.command && commandRequest.body.type === type;
       $(id).disabled = (temporaryCommands.includes(type) && !retry && (!loudnessTarget || !confirmedModes.includes(workerLoudness))) ||
@@ -115,6 +128,7 @@
   }
   const terminalCommand = status => ['succeeded', 'failed', 'expired'].includes(status);
   function renderCommand(command) {
+    if (command.type === 'set_volume') $('volume-status').textContent = `Volume ${Math.round(command.volume * 100)}%: ${command.status}${command.reason ? ` - ${command.reason}` : ''}`;
     $('command-status').textContent = `Status: ${command.status} - ${command.type || commandRequest?.body.type} - ${command.id}${command.reason ? ` - ${command.reason}` : ''}${command.completedAt ? ` - completed ${new Date(command.completedAt).toLocaleTimeString()}` : ''}`;
   }
   const message = text => { $('message').textContent = text; };
@@ -146,6 +160,8 @@
     $('worker-status').textContent = 'No data loaded';
     renderLoudness();
     workerRuntime = null; commandRequest = null; creatingCommand = false;
+    volumePercent = 80; lastWorkerVolume = null; lastVolumeResetAt = null;
+    $('volume-status').textContent = 'Choose a volume, then press Set.';
     updateButtons();
     $('command-status').textContent = 'No command sent.';
   }
@@ -494,9 +510,10 @@
     if ($(buttonId).disabled || !token || !party || !workerRuntime || creatingCommand || (commandRequest?.command && !terminalCommand(commandRequest.command.status))) return;
     if (commandRequest && !commandRequest.command && commandRequest.body.type !== type) return;
     // Keep the same request ID/body after ambiguous creation failures.
-    if (!commandRequest || commandRequest.command) commandRequest = { body: { partyId: party, runtimeId: workerRuntime, requestId: crypto.randomUUID(), type, ...(temporaryCommands.includes(type) ? loudnessTarget : {}) } };
+    if (!commandRequest || commandRequest.command) commandRequest = { body: { partyId: party, runtimeId: workerRuntime, requestId: crypto.randomUUID(), type, ...(type === 'set_volume' ? { volume: volumePercent / 100 } : {}), ...(temporaryCommands.includes(type) ? loudnessTarget : {}) } };
     const attempt = commandRequest, revision = generation;
     creatingCommand = true; updateButtons();
+    if (type === 'set_volume') $('volume-status').textContent = `Submitting ${volumePercent}% - execution not yet confirmed.`;
     $('command-status').textContent = `Submitting ${type} - execution not yet confirmed.`;
     try {
       const data = await request('/admin/commands', 'POST', attempt.body);
@@ -508,8 +525,10 @@
       if (error.status === 401) { clearSession('Session expired or revoked. Enter your PIN again.'); return; }
       if (error.status >= 400 && error.status < 500 && error.status !== 429) {
         commandRequest = null;
+        if (type === 'set_volume') $('volume-status').textContent = 'Volume command rejected.';
         $('command-status').textContent = 'Command rejected. Refresh the worker/track state before trying again.';
       } else {
+        if (type === 'set_volume') $('volume-status').textContent = 'Creation unconfirmed. Press Set to retry.';
         $('command-status').textContent = 'Creation unconfirmed. Press the same button to retry with the same request ID.';
       }
     } finally {
@@ -551,6 +570,18 @@
       if (!queuePending && !queueDrag && localQueueRevision === queueRevision && read === queueRead) renderQueue(queue);
       workerRuntime = state.status === 'recent' ? state.worker?.runtimeId : null;
       renderLoudness(workerRuntime ? state.worker : null);
+      const resetAt = workerRuntime && Number.isSafeInteger(state.worker.volumeResetAt) ? state.worker.volumeResetAt : null;
+      if (resetAt !== null) {
+        if (lastVolumeResetAt !== null && resetAt > lastVolumeResetAt) volumePercent = 80;
+        lastVolumeResetAt = resetAt;
+      }
+      const observedVolume = workerRuntime && Number.isFinite(state.worker.volume) ? Math.round(state.worker.volume * 100) : null;
+      if (observedVolume !== null) {
+        if (lastWorkerVolume !== null && observedVolume !== lastWorkerVolume && !creatingCommand && (!commandRequest || (commandRequest.command && terminalCommand(commandRequest.command.status)))) {
+          volumePercent = Math.round(observedVolume / 5) * 5;
+        }
+        lastWorkerVolume = observedVolume;
+      }
       updateButtons();
       $('worker-status').textContent = `Worker: ${state.status}`;
       $('worker-contact').textContent = state.worker ? `Last contact: ${new Date(state.worker.receivedAt).toLocaleTimeString()}` : 'No heartbeat received for this party.';

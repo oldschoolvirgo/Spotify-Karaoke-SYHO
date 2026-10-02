@@ -33,6 +33,16 @@
       </form>
       <h2 id="selected-party">Select a party</h2>
       <p id="freshness">No data loaded</p>
+      <section aria-labelledby="volume-heading">
+        <h2 id="volume-heading">Volume</h2>
+        <div class="volume-controls">
+          <button id="volume-down" type="button" aria-label="Decrease volume by 5 percent">-</button>
+          <output id="volume-value" aria-live="polite">80%</output>
+          <button id="volume-up" type="button" aria-label="Increase volume by 5 percent">+</button>
+          <button id="send-volume" type="button" disabled>Set</button>
+        </div>
+        <p id="volume-status" role="status">Choose a volume, then press Set.</p>
+      </section>
       <section>
         <h2>Loudness</h2>
         <button id="send-off" type="button" aria-pressed="false" disabled>Off</button>

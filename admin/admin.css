@@ -97,6 +97,7 @@ button {
 }
 
 button[type="submit"],
+#send-volume,
 #party-start,
 button[aria-pressed="true"] {
     border-color: transparent;
@@ -197,6 +198,7 @@ li {
 }
 
 .player-controls,
+.volume-controls,
 .queue-controls {
     display: flex;
     flex-wrap: wrap;
@@ -210,6 +212,16 @@ li {
 
 .queue-controls {
     margin-top: 8px;
+}
+
+.volume-controls {
+    align-items: center;
+}
+
+#volume-value {
+    min-width: 4ch;
+    text-align: center;
+    font-weight: 750;
 }
 
 dialog {
