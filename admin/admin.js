@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   let token = null, expiresAt = 0, generation = 0, party = '', timer, expiryTimer;
   let loudnessTarget = null;
-  let volumePercent = 80, lastWorkerVolume = null, lastVolumeResetAt = null;
+  let volumePercent = 90, lastWorkerVolume = null, lastVolumeResetAt = null;
   function renderVolume() {
     $('volume-value').textContent = `${volumePercent}%`;
     const locked = creatingCommand || Boolean(commandRequest && (!commandRequest.command || !terminalCommand(commandRequest.command.status)));
@@ -160,7 +160,7 @@
     $('worker-status').textContent = 'No data loaded';
     renderLoudness();
     workerRuntime = null; commandRequest = null; creatingCommand = false;
-    volumePercent = 80; lastWorkerVolume = null; lastVolumeResetAt = null;
+    volumePercent = 90; lastWorkerVolume = null; lastVolumeResetAt = null;
     $('volume-status').textContent = 'Choose a volume, then press Set.';
     updateButtons();
     $('command-status').textContent = 'No command sent.';
@@ -572,7 +572,7 @@
       renderLoudness(workerRuntime ? state.worker : null);
       const resetAt = workerRuntime && Number.isSafeInteger(state.worker.volumeResetAt) ? state.worker.volumeResetAt : null;
       if (resetAt !== null) {
-        if (lastVolumeResetAt !== null && resetAt > lastVolumeResetAt) volumePercent = 80;
+        if (lastVolumeResetAt !== null && resetAt > lastVolumeResetAt) volumePercent = 90;
         lastVolumeResetAt = resetAt;
       }
       const observedVolume = workerRuntime && Number.isFinite(state.worker.volume) ? Math.round(state.worker.volume * 100) : null;
