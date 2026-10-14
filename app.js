@@ -107,6 +107,49 @@ const popularTab = document.querySelector("#popular-tab");
 const popularToggle = document.querySelector("#popular-toggle");
 
 let selectedSong = null;
+let searchRevision = 0;
+let videoSubmission = null;
+const videoSong = { id: 'youtube-video', mediaType: 'video', trackName: 'YouTube Video',
+  artist: 'Paste your karaoke video link', album: 'YouTube', artworkUrl: 'youtube.svg', duration: 'Video', explicit: false };
+function showYoutubeShortcut() {
+  ++searchRevision;
+  searchAbort?.abort();
+  songs = [videoSong];
+  resultsTitle.textContent = 'Search results';
+  resultsHeading.classList.remove('is-tab-summary');
+  popularToggle.hidden = true;
+  renderSongs(songs);
+  searchButton.disabled = false; searchButton.textContent = 'Search';
+  updateQueueStatusCheck();
+}
+searchInput.addEventListener('input', () => {
+  if (searchInput.value.trim().toLowerCase() === 'youtube') showYoutubeShortcut();
+});
+
+async function submitVideo(singerName) {
+  const url = document.querySelector('#video-url').value.trim();
+  // Reuse an uncertain submission ID; starting preparation twice is avoidable.
+  if (!videoSubmission || videoSubmission.url !== url || videoSubmission.singerName !== singerName || videoSubmission.finished)
+    videoSubmission = { requestId: crypto.randomUUID(), url, singerName };
+  const attempt = videoSubmission;
+  const created = await queueRequest('/video/requests', 'POST', attempt);
+  if (typeof created.requestId === 'string') attempt.requestId = created.requestId;
+  while (partyStatus === 'active') {
+    nameError.textContent = 'Waiting for video preparation. Please keep this page open.';
+    const job = await queueRequest(`/video/status?requestId=${encodeURIComponent(attempt.requestId)}`);
+    if (job.status === 'READY') {
+      attempt.finished = true;
+      await refreshQueue();
+      return { entry: job.entry };
+    }
+    if (job.status === 'FAILED') { attempt.finished = true; throw Error(job.error || 'Video preparation failed. Please resubmit.'); }
+    nameError.textContent = job.status === 'PREPARING' ? 'Preparing your video. Please wait...' :
+      job.status === 'QUEUED' ? 'Your video is waiting in the preparation queue...' : 'Waiting for the host to prepare your video...';
+    // Flask permits 300 seconds of preparation plus any time waiting in its queue.
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  throw Error('This party is no longer active.');
+}
 let editingEntryId = null;
 
 function showScreen(screenToShow) {
@@ -302,7 +345,7 @@ function mapSearchResults(results) {
     trackName: track.trackName,
     artist: track.artistName,
     album: track.albumName,
-    artworkUrl: track.albumImageUrl || "https://placehold.co/300x300/251b38/ffffff?text=No+Artwork",
+    artworkUrl: track.mediaType === 'video' ? 'youtube.svg' : track.albumImageUrl || "https://placehold.co/300x300/251b38/ffffff?text=No+Artwork",
     spotifyUri: track.spotifyUri,
     durationMs: track.durationMs,
     duration: formatDuration(track.durationMs),
@@ -623,6 +666,9 @@ function selectSong(song) {
 
   hideQueueNotice();
   selectedSong = song;
+  document.querySelector('#video-url-field').hidden = song.mediaType !== 'video';
+  document.querySelector('#video-url').value = '';
+  videoSubmission = null;
   document.querySelector("#selected-artwork").src = song.artworkUrl;
   document.querySelector("#selected-artwork").alt = `${song.album} album artwork`;
   document.querySelector("#selected-title").innerHTML = songTitleMarkup(song);
@@ -638,6 +684,8 @@ function selectSong(song) {
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const searchTerm = searchInput.value.trim();
+  if (searchTerm.toLowerCase() === 'youtube') { showYoutubeShortcut(); return; }
+  const revision = ++searchRevision;
   hideQueueNotice();
 
   if (!searchTerm) {
@@ -656,16 +704,21 @@ searchForm.addEventListener("submit", async (event) => {
   searchButton.textContent = "Searching...";
 
   try {
-    songs = await searchSongs(searchTerm);
+    const found = await searchSongs(searchTerm);
+    if (revision !== searchRevision) return;
+    songs = found;
     renderSongs(songs);
   } catch (error) {
+    if (revision !== searchRevision) return;
     console.error("Song search failed:", error);
     songs = [];
     resultCount.textContent = "0 songs";
     songResults.innerHTML = '<div class="empty-state">Song search is temporarily unavailable. Please try again.</div>';
   } finally {
-    searchButton.disabled = false;
-    searchButton.textContent = "Search";
+    if (revision === searchRevision) {
+      searchButton.disabled = false;
+      searchButton.textContent = "Search";
+    }
   }
 });
 
@@ -732,13 +785,13 @@ singerForm.addEventListener("submit", async (event) => {
   document.querySelector("#back-button").disabled = true;
   nameError.textContent = "";
   try {
-    const snapshot = await mutateQueue("/queue", "POST", {
+    const snapshot = song.mediaType === 'video' ? await submitVideo(singerName) : await mutateQueue("/queue", "POST", {
       singerName, spotifyUri: song.spotifyUri, trackName: song.trackName,
       artistName: song.artist, albumName: song.album, albumImageUrl: song.artworkUrl,
       durationMs: song.durationMs, explicit: song.explicit
     });
     document.querySelector("#confirmation-singer").textContent = snapshot.entry.singerName;
-    document.querySelector("#confirmation-song").innerHTML = songTitleMarkup(song);
+    document.querySelector("#confirmation-song").innerHTML = songTitleMarkup(song.mediaType === 'video' ? { ...song, trackName: snapshot.entry.trackName || song.trackName } : song);
     document.querySelector("#confirmation-position").textContent = `#${snapshot.entry.position}`;
     activeSongView = "queue";
     updateSongViewTabs();

@@ -17,6 +17,14 @@
   });
   let workerLoudness = 'unavailable';
   let workerRuntime = null, commandRequest = null, creatingCommand = false;
+  let videoRuntime = null;
+  const videoControls = ['restart', 'play_pause', 'next'];
+  function commandTarget(type) {
+    const video = queueEntries.find(entry => entry.mediaType === 'video' && entry.status === 'playing')
+      || queueEntries.find(entry => entry.mediaType === 'video' && entry.status === 'up_next');
+    return video && videoControls.includes(type) ?
+      { runtimeId: videoRuntime, destination: 'video', entryId: video.id } : { runtimeId: workerRuntime };
+  }
   let queueEntries = [], queueAction = null, queuePending = false, queueRevision = 0, queueRead = 0;
   let queueControls = [];
   let queueDrag = null, dragFrame = null;
@@ -123,7 +131,7 @@
     for (const [id, type] of Object.entries(commandButtons)) {
       const retry = commandRequest && !commandRequest.command && commandRequest.body.type === type;
       $(id).disabled = (temporaryCommands.includes(type) && !retry && (!loudnessTarget || !confirmedModes.includes(workerLoudness))) ||
-        (type === 'off' && workerLoudness === 'unavailable') || lifecycleStatus !== 'active' || creatingCommand || !workerRuntime || Boolean(commandRequest?.command && !terminalCommand(commandRequest.command.status)) || Boolean(commandRequest && !commandRequest.command && commandRequest.body.type !== type);
+        (type === 'off' && workerLoudness === 'unavailable') || lifecycleStatus !== 'active' || creatingCommand || !commandTarget(type).runtimeId || Boolean(commandRequest?.command && !terminalCommand(commandRequest.command.status)) || Boolean(commandRequest && !commandRequest.command && commandRequest.body.type !== type);
     }
   }
   const terminalCommand = status => ['succeeded', 'failed', 'expired'].includes(status);
@@ -159,7 +167,7 @@
     $('freshness').textContent = 'No data loaded';
     $('worker-status').textContent = 'No data loaded';
     renderLoudness();
-    workerRuntime = null; commandRequest = null; creatingCommand = false;
+    workerRuntime = null; videoRuntime = null; commandRequest = null; creatingCommand = false;
     volumePercent = 90; lastWorkerVolume = null; lastVolumeResetAt = null;
     $('volume-status').textContent = 'Choose a volume, then press Set.';
     updateButtons();
@@ -507,10 +515,10 @@
     }
   });
   for (const [buttonId, type] of Object.entries(commandButtons)) $(buttonId).addEventListener('click', async () => {
-    if ($(buttonId).disabled || !token || !party || !workerRuntime || creatingCommand || (commandRequest?.command && !terminalCommand(commandRequest.command.status))) return;
+    if ($(buttonId).disabled || !token || !party || !commandTarget(type).runtimeId || creatingCommand || (commandRequest?.command && !terminalCommand(commandRequest.command.status))) return;
     if (commandRequest && !commandRequest.command && commandRequest.body.type !== type) return;
     // Keep the same request ID/body after ambiguous creation failures.
-    if (!commandRequest || commandRequest.command) commandRequest = { body: { partyId: party, runtimeId: workerRuntime, requestId: crypto.randomUUID(), type, ...(type === 'set_volume' ? { volume: volumePercent / 100 } : {}), ...(temporaryCommands.includes(type) ? loudnessTarget : {}) } };
+    if (!commandRequest || commandRequest.command) commandRequest = { body: { partyId: party, ...commandTarget(type), requestId: crypto.randomUUID(), type, ...(type === 'set_volume' ? { volume: volumePercent / 100 } : {}), ...(temporaryCommands.includes(type) ? loudnessTarget : {}) } };
     const attempt = commandRequest, revision = generation;
     creatingCommand = true; updateButtons();
     if (type === 'set_volume') $('volume-status').textContent = `Submitting ${volumePercent}% - execution not yet confirmed.`;
@@ -569,6 +577,7 @@
       }
       if (!queuePending && !queueDrag && localQueueRevision === queueRevision && read === queueRead) renderQueue(queue);
       workerRuntime = state.status === 'recent' ? state.worker?.runtimeId : null;
+      videoRuntime = state.videoReceiver?.runtimeId || null;
       renderLoudness(workerRuntime ? state.worker : null);
       const resetAt = workerRuntime && Number.isSafeInteger(state.worker.volumeResetAt) ? state.worker.volumeResetAt : null;
       if (resetAt !== null) {
@@ -592,7 +601,7 @@
       if (revision === generation) {
         $('freshness').textContent = 'Data stale - refresh failed.';
         $('worker-status').textContent = 'Worker: unknown - status read failed.';
-        workerRuntime = null; renderLoudness(); updateButtons();
+        workerRuntime = null; videoRuntime = null; renderLoudness(); updateButtons();
         if (commandRequest?.command && !terminalCommand(commandRequest.command.status)) $('command-status').textContent = `Command status stale - last confirmed: ${commandRequest.command.status} - ${commandRequest.command.id}`;
         message(error.message);
       }

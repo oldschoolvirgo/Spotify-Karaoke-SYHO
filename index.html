@@ -129,6 +129,11 @@
         <p id="selected-artist" class="selected-artist"></p>
 
         <form id="singer-form" novalidate>
+          <div id="video-url-field" hidden>
+            <label for="video-url">YouTube video URL</label>
+            <input id="video-url" name="videoUrl" type="url" maxlength="2048" placeholder="https://www.youtube.com/watch?v=..." />
+            <p>Paste the link to the karaoke video you want to sing.</p>
+          </div>
           <p id="song-limit-hint" hidden></p>
           <label for="singer-name">What should we call you?</label>
           <input id="singer-name" name="singerName" type="text" maxlength="40" placeholder="Enter your singer name"
