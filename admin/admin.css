@@ -56,24 +56,30 @@ form p {
 }
 
 input,
+select,
 textarea,
 button {
     min-width: 0;
     font: inherit;
 }
 
+select,
 textarea {
     width: 100%;
-    min-height: 112px;
     padding: 14px 15px;
     border: 1px solid var(--border);
     border-radius: 14px;
     outline: 0;
     background: var(--surface-raised);
     color: var(--text);
+}
+
+textarea {
+    min-height: 112px;
     resize: vertical;
 }
 
+select:focus,
 textarea:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(255, 79, 163, 0.15);
