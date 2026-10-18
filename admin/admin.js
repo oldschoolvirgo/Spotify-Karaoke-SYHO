@@ -2,8 +2,7 @@
   const API = 'https://karaoke-search-relay.oldschoolvirgo.workers.dev';
   const $ = id => document.getElementById(id);
   let token = null, expiresAt = 0, generation = 0, party = '', timer, expiryTimer;
-  let loudnessTarget = null;
-  let volumePercent = 90, lastWorkerVolume = null, lastVolumeResetAt = null;
+  let volumePercent = 90, lastWorkerVolume = null;
   function renderVolume() {
     $('volume-value').textContent = `${volumePercent}%`;
     const locked = creatingCommand || Boolean(commandRequest && (!commandRequest.command || !terminalCommand(commandRequest.command.status)));
@@ -15,13 +14,11 @@
     volumePercent = Math.max(0, Math.min(100, volumePercent + step));
     renderVolume();
   });
-  let workerLoudness = 'unavailable';
   let workerRuntime = null, commandRequest = null, creatingCommand = false;
   let videoRuntime = null;
   const videoControls = ['restart', 'play_pause', 'next'];
   function commandTarget(type) {
-    const video = queueEntries.find(entry => entry.mediaType === 'video' && entry.status === 'playing')
-      || queueEntries.find(entry => entry.mediaType === 'video' && entry.status === 'up_next');
+    const video = queueEntries.find(entry => entry.mediaType === 'video' && entry.status === 'playing');
     return video && videoControls.includes(type) ?
       { runtimeId: videoRuntime, destination: 'video', entryId: video.id } : { runtimeId: workerRuntime };
   }
@@ -73,6 +70,35 @@
   $('party-end').addEventListener('click', () => { if (!lifecyclePending && lifecycleStatus === 'active') $('party-end-dialog').showModal(); });
   $('party-end-cancel').addEventListener('click', () => $('party-end-dialog').close());
   $('party-end-confirm').addEventListener('click', () => changeLifecycle('end'));
+  const announcementPresets = [
+    {"label": "Solo", "title": "Solo Performance \ud83c\udfa4", "message": "This one's a solo! Let's give our singer the spotlight."},
+    {"label": "Bartenders", "title": "Show Your Bartenders Some Love! \ud83c\udf79", "message": "Great drinks deserve great tips! Take care of your bartenders."},
+    {"label": "Next Event", "title": "Sing Your \u2764\ufe0f\u200d\ud83d\udd25 Out", "message": "Catch us next at [Venue] on [Date] at [Time]!"},
+    {"label": "Last Call", "title": "Last Call for Karaoke! \ud83c\udfa4", "message": "Get your final song requests in before the queue closes!"},
+    {"label": "Queue Closed", "title": "Karaoke Requests Are Closed", "message": "Thanks for singing with us! Let's finish strong!"},
+    {"label": "Queue Open", "title": "The Karaoke Queue Is Open!", "message": "Your turn to shine! Scan the QR code and request a song."},
+    {"label": "Duet", "title": "It's a Duet! \ud83c\udfb6", "message": "Two voices, one stage! Let's hear it for our singers!"},
+    {"label": "Crowd Hype", "title": "Make Some Noise! \ud83d\udd25", "message": "Show some love for our amazing singers tonight!"},
+    {"label": "Instagram", "title": "Follow Sing Your \u2764\ufe0f\u200d\ud83d\udd25 Out", "message": "Follow us on Instagram @SingYourHeartOutHTX for upcoming karaoke nights!"},
+    {"label": "Referral", "title": "Bring Karaoke to Your Party!", "message": "Love karaoke? Ask us about booking your next event!"},
+    {"label": "Sing Along", "title": "Everybody Sing Along! \ud83c\udfb6", "message": "You know the words! Let's hear the whole room!"},
+    {"label": "Final Song", "title": "One Last Song! \ud83c\udfa4", "message": "Let's end the night on a high note!"},
+    {"label": "Thank You", "title": "Thank You for Singing! \u2764\ufe0f", "message": "You made tonight unforgettable. See you next time!"},
+    {"label": "Technical Delay", "title": "We'll Be Right Back!", "message": "A quick technical adjustment. Thanks for your patience."}
+  ];
+  for (const preset of announcementPresets) {
+    const option = document.createElement('option');
+    option.value = preset.label;
+    option.textContent = preset.label;
+    $('announcement-preset').appendChild(option);
+  }
+  $('announcement-preset').addEventListener('change', () => {
+    const preset = announcementPresets.find(item => item.label === $('announcement-preset').value);
+    if (!preset) return;
+    $('announcement-title').value = preset.title;
+    $('announcement-message').value = preset.message;
+    $('announcement-status').textContent = '';
+  });
   let announcementPending = false;
   $('announcement-form').addEventListener('submit', async event => {
     event.preventDefault();
@@ -87,6 +113,9 @@
       if (revision !== generation) return;
       if (data.partyId !== selected || !data.announcement?.id || data.announcement.title !== title ||
           data.announcement.message !== text) throw Error('Invalid announcement response.');
+      $('announcement-preset').value = '';
+      $('announcement-title').value = '';
+      $('announcement-message').value = '';
       $('announcement-status').textContent = 'Published for guest phones and Lyrics Display.';
     } catch (error) {
       if (revision !== generation) return;
@@ -114,24 +143,11 @@
     }
     updateSettingsControls();
   }
-  const commandButtons = { 'send-volume': 'set_volume', 'send-off': 'off', 'send-quiet': 'quiet_this_song', 'send-normal': 'normal', 'send-loud': 'loud_this_song', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next', 'send-reshuffle': 'reshuffle' };
-  const temporaryCommands = ['quiet_this_song', 'normal', 'loud_this_song'];
-  const confirmedModes = ['off', 'quiet', 'normal', 'loud'];
-  function renderLoudness(worker = null) {
-    workerLoudness = worker && Number.isSafeInteger(worker.trackRevision) && worker.trackRevision > 0 &&
-      [...confirmedModes, 'pending', 'uncertain'].includes(worker.loudnessState) ? worker.loudnessState : 'unavailable';
-    loudnessTarget = worker && /^spotify:track:[a-zA-Z0-9]{22}$/.test(worker.currentUri || '') &&
-      Number.isSafeInteger(worker.trackRevision) && worker.trackRevision > 0 ? { targetUri: worker.currentUri, trackRevision: worker.trackRevision } : null;
-    if (!loudnessTarget && ['quiet', 'normal', 'loud'].includes(workerLoudness)) workerLoudness = 'unavailable';
-    $('loudness-state').textContent = `Loudness: ${workerLoudness[0].toUpperCase() + workerLoudness.slice(1)}`;
-    for (const mode of confirmedModes) $('send-' + mode).setAttribute('aria-pressed', String(workerLoudness === mode));
-  }
+  const commandButtons = { 'send-volume': 'set_volume', 'send-restart': 'restart', 'send-play-pause': 'play_pause', 'send-next': 'next', 'send-reshuffle': 'reshuffle' };
   function updateButtons() {
     renderVolume();
     for (const [id, type] of Object.entries(commandButtons)) {
-      const retry = commandRequest && !commandRequest.command && commandRequest.body.type === type;
-      $(id).disabled = (temporaryCommands.includes(type) && !retry && (!loudnessTarget || !confirmedModes.includes(workerLoudness))) ||
-        (type === 'off' && workerLoudness === 'unavailable') || lifecycleStatus !== 'active' || creatingCommand || !commandTarget(type).runtimeId || Boolean(commandRequest?.command && !terminalCommand(commandRequest.command.status)) || Boolean(commandRequest && !commandRequest.command && commandRequest.body.type !== type);
+      $(id).disabled = lifecycleStatus !== 'active' || creatingCommand || !commandTarget(type).runtimeId || Boolean(commandRequest?.command && !terminalCommand(commandRequest.command.status)) || Boolean(commandRequest && !commandRequest.command && commandRequest.body.type !== type);
     }
   }
   const terminalCommand = status => ['succeeded', 'failed', 'expired'].includes(status);
@@ -147,6 +163,7 @@
     $('party-start').disabled = $('party-end').disabled = $('party-end-confirm').disabled = false;
     $('party-end-dialog').close();
     announcementPending = false; $('announcement-send').disabled = !token || !party || lifecycleStatus !== 'active';
+    $('announcement-preset').value = '';
     $('announcement-title').value = ''; $('announcement-message').value = ''; $('announcement-status').textContent = '';
     $('estimate-count').textContent = 'Queue not loaded';
     $('estimate-duration').textContent = 'Duration unavailable';
@@ -166,9 +183,8 @@
     $('selected-party').textContent = 'Select a party';
     $('freshness').textContent = 'No data loaded';
     $('worker-status').textContent = 'No data loaded';
-    renderLoudness();
     workerRuntime = null; videoRuntime = null; commandRequest = null; creatingCommand = false;
-    volumePercent = 90; lastWorkerVolume = null; lastVolumeResetAt = null;
+    volumePercent = 90; lastWorkerVolume = null;
     $('volume-status').textContent = 'Choose a volume, then press Set.';
     updateButtons();
     $('command-status').textContent = 'No command sent.';
@@ -518,7 +534,7 @@
     if ($(buttonId).disabled || !token || !party || !commandTarget(type).runtimeId || creatingCommand || (commandRequest?.command && !terminalCommand(commandRequest.command.status))) return;
     if (commandRequest && !commandRequest.command && commandRequest.body.type !== type) return;
     // Keep the same request ID/body after ambiguous creation failures.
-    if (!commandRequest || commandRequest.command) commandRequest = { body: { partyId: party, ...commandTarget(type), requestId: crypto.randomUUID(), type, ...(type === 'set_volume' ? { volume: volumePercent / 100 } : {}), ...(temporaryCommands.includes(type) ? loudnessTarget : {}) } };
+    if (!commandRequest || commandRequest.command) commandRequest = { body: { partyId: party, ...commandTarget(type), requestId: crypto.randomUUID(), type, ...(type === 'set_volume' ? { volume: volumePercent / 100 } : {}) } };
     const attempt = commandRequest, revision = generation;
     creatingCommand = true; updateButtons();
     if (type === 'set_volume') $('volume-status').textContent = `Submitting ${volumePercent}% - execution not yet confirmed.`;
@@ -578,12 +594,6 @@
       if (!queuePending && !queueDrag && localQueueRevision === queueRevision && read === queueRead) renderQueue(queue);
       workerRuntime = state.status === 'recent' ? state.worker?.runtimeId : null;
       videoRuntime = state.videoReceiver?.runtimeId || null;
-      renderLoudness(workerRuntime ? state.worker : null);
-      const resetAt = workerRuntime && Number.isSafeInteger(state.worker.volumeResetAt) ? state.worker.volumeResetAt : null;
-      if (resetAt !== null) {
-        if (lastVolumeResetAt !== null && resetAt > lastVolumeResetAt) volumePercent = 90;
-        lastVolumeResetAt = resetAt;
-      }
       const observedVolume = workerRuntime && Number.isFinite(state.worker.volume) ? Math.round(state.worker.volume * 100) : null;
       if (observedVolume !== null) {
         if (lastWorkerVolume !== null && observedVolume !== lastWorkerVolume && !creatingCommand && (!commandRequest || (commandRequest.command && terminalCommand(commandRequest.command.status)))) {
@@ -601,7 +611,7 @@
       if (revision === generation) {
         $('freshness').textContent = 'Data stale - refresh failed.';
         $('worker-status').textContent = 'Worker: unknown - status read failed.';
-        workerRuntime = null; videoRuntime = null; renderLoudness(); updateButtons();
+        workerRuntime = null; videoRuntime = null; updateButtons();
         if (commandRequest?.command && !terminalCommand(commandRequest.command.status)) $('command-status').textContent = `Command status stale - last confirmed: ${commandRequest.command.status} - ${commandRequest.command.id}`;
         message(error.message);
       }

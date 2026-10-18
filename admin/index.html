@@ -44,24 +44,15 @@
         <p id="volume-status" role="status">Choose a volume, then press Set.</p>
       </section>
       <section>
-        <h2>Loudness</h2>
-        <button id="send-off" type="button" aria-pressed="false" disabled>Off</button>
-        <button id="send-quiet" type="button" aria-pressed="false" disabled>Quiet</button>
-        <button id="send-normal" type="button" aria-pressed="false" disabled>Normal</button>
-        <button id="send-loud" type="button" aria-pressed="false" disabled>Loud</button>
-        <p id="loudness-state" role="status">Loudness: Unavailable</p>
-        <p class="hint">Quiet, Normal and Loud apply to this song only. Track changes return to Off.
-          Confirmed laptop state updates with the dashboard.</p>
+        <h2>Player</h2>
+        <div class="player-controls">
+          <button id="send-restart" type="button" disabled>RESTART</button>
+          <button id="send-play-pause" type="button" disabled>PLAY / PAUSE</button><button id="send-next" type="button"
+            disabled>NEXT</button>
+          <button id="send-reshuffle" type="button" disabled>RESHUFFLE</button>
+        </div>
         <p id="command-status" role="status">No command sent.</p>
       </section>
-      <form id="announcement-form" aria-labelledby="announcement-heading">
-        <h2 id="announcement-heading">Announcement</h2>
-        <label for="announcement-title">Title</label><input id="announcement-title" type="text">
-        <label for="announcement-message">Message</label><textarea id="announcement-message" rows="3"></textarea>
-        <p class="hint">Keep announcements concise for easy reading on guest phones.</p>
-        <button id="announcement-send" type="submit" disabled>Send Announcement</button>
-        <p id="announcement-status" role="status" aria-live="polite"></p>
-      </form>
       <section aria-labelledby="estimate-title">
         <h2 id="estimate-title">Estimated Queue</h2>
         <p id="estimate-count">Queue not loaded</p>
@@ -70,15 +61,18 @@
         <p id="estimate-unknown" class="hint"></p>
         <p class="hint">Approximate, assuming continuous playback. Includes full playing-song durations.</p>
       </section>
-      <section>
-        <h2>Player</h2>
-        <div class="player-controls">
-          <button id="send-restart" type="button" disabled>RESTART</button>
-          <button id="send-play-pause" type="button" disabled>PLAY / PAUSE</button><button id="send-next" type="button"
-            disabled>NEXT</button>
-          <button id="send-reshuffle" type="button" disabled>RESHUFFLE</button>
-        </div>
-      </section>
+      <form id="announcement-form" aria-labelledby="announcement-heading">
+        <h2 id="announcement-heading">Announcement</h2>
+        <label for="announcement-preset">Announcement preset</label>
+        <select id="announcement-preset">
+          <option value="">Choose a preset...</option>
+        </select>
+        <label for="announcement-title">Title</label><input id="announcement-title" type="text">
+        <label for="announcement-message">Message</label><textarea id="announcement-message" rows="3"></textarea>
+        <p class="hint">Keep announcements concise for easy reading on guest phones.</p>
+        <button id="announcement-send" type="submit" disabled>Send Announcement</button>
+        <p id="announcement-status" role="status" aria-live="polite"></p>
+      </form>
       <form id="settings-form">
         <label for="song-limit">Max Songs Per Guest</label>
         <input id="song-limit" type="number" min="1" max="20" step="1" required disabled>

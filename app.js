@@ -126,8 +126,26 @@ searchInput.addEventListener('input', () => {
   if (searchInput.value.trim().toLowerCase() === 'youtube') showYoutubeShortcut();
 });
 
+function youtubeUrl(value) {
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+    const id = url.hostname === 'youtu.be' ? url.pathname.slice(1) :
+      ['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(url.hostname) ?
+        url.pathname === '/watch' ? url.searchParams.get('v') :
+          /^\/(shorts|live|embed)\//.test(url.pathname) ? url.pathname.split('/')[2] : null : null;
+    return /^[\w-]{11}$/.test(id || '') ? `https://www.youtube.com/watch?v=${id}` : null;
+  } catch { return null; }
+}
+
 async function submitVideo(singerName) {
-  const url = document.querySelector('#video-url').value.trim();
+  const input = document.querySelector('#video-url');
+  const url = youtubeUrl(input.value);
+  if (!url) {
+    input.focus();
+    throw Error('Only YouTube video links are allowed. Paste the complete HTTPS link.');
+  }
+  input.value = url;
   // Reuse an uncertain submission ID; starting preparation twice is avoidable.
   if (!videoSubmission || videoSubmission.url !== url || videoSubmission.singerName !== singerName || videoSubmission.finished)
     videoSubmission = { requestId: crypto.randomUUID(), url, singerName };
@@ -678,7 +696,7 @@ function selectSong(song) {
   showScreen(selectionScreen);
   updateSubmissionState();
   void refreshQueue(); // Refresh on entry in addition to the 15-second selection checks.
-  singerNameInput.focus();
+  (song.mediaType === 'video' ? document.querySelector('#video-url') : singerNameInput).focus();
 }
 
 searchForm.addEventListener("submit", async (event) => {
