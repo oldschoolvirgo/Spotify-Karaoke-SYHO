@@ -2,7 +2,7 @@
   const API = 'https://karaoke-search-relay.oldschoolvirgo.workers.dev';
   const $ = id => document.getElementById(id);
   let token = null, expiresAt = 0, generation = 0, party = '', timer, expiryTimer;
-  let volumePercent = 90, lastWorkerVolume = null;
+  let volumePercent = 100, lastWorkerVolume = null;
   function renderVolume() {
     $('volume-value').textContent = `${volumePercent}%`;
     const locked = creatingCommand || Boolean(commandRequest && (!commandRequest.command || !terminalCommand(commandRequest.command.status)));
@@ -184,7 +184,7 @@
     $('freshness').textContent = 'No data loaded';
     $('worker-status').textContent = 'No data loaded';
     workerRuntime = null; videoRuntime = null; commandRequest = null; creatingCommand = false;
-    volumePercent = 90; lastWorkerVolume = null;
+    volumePercent = 100; lastWorkerVolume = null;
     $('volume-status').textContent = 'Choose a volume, then press Set.';
     updateButtons();
     $('command-status').textContent = 'No command sent.';

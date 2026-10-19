@@ -176,6 +176,7 @@ function showScreen(screenToShow) {
     screen.hidden = screen !== screenToShow;
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
+  if (screenToShow === searchScreen) searchInput.focus();
   updateQueueStatusCheck();
   syncSelectionQueuePolling();
 }
@@ -909,7 +910,6 @@ document.querySelector("#search-again-button").addEventListener("click", () => {
   selectedSong = null;
   showSongView("queue");
   showScreen(searchScreen);
-  searchInput.focus();
 });
 
 joinForm.addEventListener("submit", (event) => {
@@ -959,4 +959,5 @@ if (validPartyId) {
   });
 } else {
   showScreen(joinScreen);
+  partyCodeInput.focus();
 }
